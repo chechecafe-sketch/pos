@@ -26,7 +26,7 @@ const STORES = [
   {id:"juarez",      name:"Juárez",                 short:"Juárez",      tables:10, color:"#c8a96e"},
   {id:"centro",      name:"Centro",                 short:"Centro",      tables:8,  color:"#b87c4a"},
   {id:"del-valle",   name:"Del Valle - Studio",     short:"Del Valle",   tables:10, color:"#7aace0"},
-  {id:"jardin",      name:"Jardín",                 short:"Jardín",      tables:10, color:"#c47ab8"},
+  {id:"jardin",      name:"Jardín",                 short:"Jardín",      tables:11, color:"#c47ab8"},
 ];
 
 // Global admins can see all stores
@@ -70,7 +70,8 @@ const STORE_EMPLOYEES = {
     {id:601,name:"Giselle Aguilar", pin:"8787",role:"gerente"},
     {id:603,name:"Javier Ruíz",     pin:"3333",role:"mesero"},
     {id:610,name:"Dulce",           pin:"4444",role:"mesero"},
-    {id:606,name:"Magali Cortés",   pin:"6061",role:"mesero"},
+    {id:611,name:"Karla",           pin:"2222",role:"mesero"},
+    {id:606,name:"Magali Cortés",   pin:"6061",role:"gerente"},
     {id:607,name:"Briza Guzmán",    pin:"6071",role:"mesero"},
     {id:608,name:"Francisco Perea", pin:"6081",role:"mesero"},
     {id:609,name:"Invitado",        pin:"1111",role:"mesero"},
@@ -163,7 +164,7 @@ const MENU = {
   "TODO EL DÍA":[
     {id:"t1",name:"Chilaquiles V/R",    price:125,station:"cocina",hasFoodExtras:true},
     {id:"t2",name:"Burritos Cochinita", price:152,station:"cocina",hasFoodExtras:true},
-    {id:"t3",name:"Molletes Cochinita", price:152,station:"cocina",hasFoodExtras:true},
+    {id:"t3",name:"Molletes Cochinita", price:161,station:"cocina",hasFoodExtras:true},
     {id:"t4",name:"Sándwich Cubanito",  price:170,station:"cocina",hasFoodExtras:true,fav:true},
     {id:"t5",name:"Sándwich Barcelona", price:161,station:"cocina",hasFoodExtras:true,fav:true},
     {id:"t6",name:"Sándwich de Tocino", price:170,station:"cocina",hasFoodExtras:true,fav:true},
@@ -802,6 +803,7 @@ export default function App() {
   const [selTable, setSelTable] = useState(1);
   const [orders, setOrders]     = useState({});
   const [closed, setClosed]     = useState([]);
+  const [folios, setFolios]     = useState([]); // control interno de folios (anti-faltantes)
   const [activeCat, setCat]     = useState("CAFÉ");
   const [mobStep, setMobStep]   = useState("table"); // table | category | items | cart (mobile order wizard)
   const [modal, setModal]       = useState(null);
@@ -861,11 +863,13 @@ export default function App() {
       sb.select("open_orders",storeQ),
       sb.select("inventory",`?id=eq.${store}`),
       sb.select("emp_consumption"),
-    ]).then(([co,oo,inv,ec])=>{
+      sb.select("folios",`?store_id=eq.${store}&order=folio_num.desc&limit=500`),
+    ]).then(([co,oo,inv,ec,fo])=>{
       if(Array.isArray(co)) setClosed(co);
       if(Array.isArray(oo)){const m={};oo.forEach(r=>{m[r.table_id]=r.data;});setOrders(m);}
       if(Array.isArray(inv)&&inv[0]) setInventory({...DEFAULT_INV,...inv[0].data});
       if(Array.isArray(ec)){const m={};ec.forEach(r=>{m[r.key]=r.data;});setEmpCons(m);}
+      if(Array.isArray(fo)) setFolios(fo);
       setSynced(true); setLoading(false);
     }).catch(()=>setLoading(false));
     try{
@@ -1059,16 +1063,61 @@ export default function App() {
     syncInventory({...inventory,coffeBags:bags,milk:milkObj,milkLiters:totalMilk,disposables:nd,consumptionLog:[log,...(inventory.consumptionLog||[]).slice(0,199)]});
   };
 
+  // ── FOLIOS (control interno anti-faltantes) ─────────────
+  // Cada cuenta nueva abre un folio secuencial en Supabase. Se cierra al
+  // cobrar, se cancela si se limpia sin cobrar. El conteo de folios
+  // cancelados/abandonados es visible solo para gerentes/admins.
+  const openFolio=async(tId,modeNow)=>{
+    try{
+      const row=await sb.insert("folios",{
+        store_id:store,table_num:tId,mode:modeNow||"salon",
+        employee_id:employee?.id,employee_name:employee?.name,status:"abierto",
+      });
+      const rec=Array.isArray(row)?row[0]:row;
+      if(rec?.id){
+        upd(tId,{folioId:rec.id,folioNum:rec.folio_num});
+        setFolios(p=>[rec,...p]);
+      }
+    }catch{}
+  };
+  const cancelFolio=async(folioId,itemsSnapshot)=>{
+    if(!folioId)return;
+    const total=(itemsSnapshot||[]).reduce((s,i)=>s+i.price*i.qty,0);
+    setFolios(p=>p.map(f=>f.id===folioId?{...f,status:"cancelado",items:itemsSnapshot||[],total,closed_at:nowISO()}:f));
+    try{
+      await sb.update("folios",`?id=eq.${folioId}`,{
+        status:"cancelado",items:itemsSnapshot||[],total,closed_at:nowISO(),
+      });
+    }catch{}
+  };
+  const closeFolio=async(folioId,closedOrderId,orderTotal)=>{
+    if(!folioId)return;
+    setFolios(p=>p.map(f=>f.id===folioId?{...f,status:"cerrado",closed_order_id:closedOrderId,total:orderTotal,closed_at:nowISO()}:f));
+    try{
+      await sb.update("folios",`?id=eq.${folioId}`,{
+        status:"cerrado",closed_order_id:closedOrderId,total:orderTotal,closed_at:nowISO(),
+      });
+    }catch{}
+  };
+  // Limpiar una mesa/cuenta: si tenía folio abierto con items, se marca cancelado (queda registrado)
+  const clearOrder=(tId)=>{
+    const o=orders[tId]||EMPTY;
+    if(o.folioId&&o.items&&o.items.length>0) cancelFolio(o.folioId,o.items);
+    upd(tId,{items:[],seatedAt:null,lastOrderAt:null,folioId:null,folioNum:null});
+  };
+
   const addItem=(item)=>{
     setTipD(false);
     const c=orders[selTable]||EMPTY;const items=c.items||[];
     const idx=items.findIndex(i=>i.id===item.id&&i.size===item.size&&i.milk===item.milk&&JSON.stringify(i.extras)===JSON.stringify(item.extras));
     const ni=idx>=0?items.map((it,j)=>j===idx?{...it,qty:it.qty+1}:it):[...items,{...item,qty:1,lineId:`${item.id}_${Date.now()}`}];
     // Auto-seat table when first item added
+    const isNewFolio=!c.seatedAt;
     const patch={items:ni};
-    if(!c.seatedAt) patch.seatedAt=nowISO();
+    if(isNewFolio) patch.seatedAt=nowISO();
     patch.lastOrderAt=nowISO();
     upd(selTable,patch);
+    if(isNewFolio) openFolio(selTable,c.mode||"salon");
   };
 
   const removeItem=(lid)=>upd(selTable,{items:(cur.items||[]).filter(i=>i.lineId!==lid)});
@@ -1096,6 +1145,7 @@ export default function App() {
       const o={id:`ord_${Date.now()}`,table_num:selTable,store_id:store,store_name:storeObj?.name||"",employee:employee.name,employee_id:employee.id,items:[...cur.items],comensales:cur.comensales,mode:cur.mode,subtotal:total,subtotal_before_disc:subtotalBeforeDisc,discount_label:discount?.label||null,discount_pct:discount?.pct||0,method,cash_amt:cashAmt||0,card_amt:cardAmt||0,tip:tipAmt||0,timestamp:nowISO()};
       await sb.insert("closed_orders",o);
       await sb.delete("open_orders",`?table_id=eq.${selTable}&store_id=eq.${store}`);
+      if(cur.folioId) closeFolio(cur.folioId,o.id,total);
       // Clear alert tracking for this table
       Object.keys(alertedTablesRef.current).forEach(k=>{if(k.startsWith(`${selTable}_`))delete alertedTablesRef.current[k];});
       setDiscount(null);
@@ -1555,7 +1605,7 @@ export default function App() {
                     <span className={`mode-badge ${cur.mode==="salon"?"salon":"takeout"}`}>
                       {cur.mode==="salon"?"🪑 Salón":"🛍 Para llevar"}
                     </span>
-                    <button className="oclr" onClick={()=>upd(selTable,{items:[],seatedAt:null,lastOrderAt:null})}>Limpiar</button>
+                    <button className="oclr" onClick={()=>clearOrder(selTable)}>Limpiar</button>
                   </div>
                   <div className="oitems">
                     {(!cur.items||cur.items.length===0)?(
@@ -1759,7 +1809,7 @@ export default function App() {
                       <span className={`mode-badge ${cur.mode==="salon"?"salon":"takeout"}`}>
                         {cur.mode==="salon"?"🪑 Salón":"🛍 Para llevar"}
                       </span>
-                      <button className="oclr" onClick={()=>upd(selTable,{items:[],seatedAt:null,lastOrderAt:null})}>Limpiar</button>
+                      <button className="oclr" onClick={()=>clearOrder(selTable)}>Limpiar</button>
                     </div>
                     <div className="oitems">
                       {(!cur.items||cur.items.length===0)?(
@@ -1897,6 +1947,48 @@ export default function App() {
                           {a.late?" ⚠️":""}</span>
                       </div>
                     ))}
+                  </div>
+                );
+              })()}
+              {/* Control de folios — solo gerentes/admins lo ven */}
+              {(isGerente||isSuperAdmin)&&(()=>{
+                const todayFolios=folios.filter(f=>dayKey(new Date(f.created_at))===today);
+                const cancelados=todayFolios.filter(f=>f.status==="cancelado");
+                const abiertos=todayFolios.filter(f=>f.status==="abierto");
+                const cerrados=todayFolios.filter(f=>f.status==="cerrado");
+                const montoCancelado=cancelados.reduce((s,f)=>s+(Number(f.total)||0),0);
+                const totalFolios=todayFolios.length;
+                const tieneAlerta=cancelados.length>0||abiertos.length>0;
+                return(
+                  <div style={{background:tieneAlerta?"#200a0a":"var(--sf2)",border:`1px solid ${tieneAlerta?"var(--err)":"var(--bd)"}`,borderRadius:10,padding:"12px",display:"flex",flexDirection:"column",gap:6}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:12,fontWeight:700,color:tieneAlerta?"var(--err)":"var(--tx)"}}>🔒 Control de Folios (hoy) · solo gerencia</span>
+                      <span style={{fontSize:10,color:"var(--mu)",fontFamily:"DM Mono"}}>{totalFolios} folios</span>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                      <div style={{display:"flex",flexDirection:"column"}}>
+                        <span style={{fontSize:10,color:"var(--mu)"}}>Cerrados (OK)</span>
+                        <span style={{fontFamily:"DM Mono",fontSize:16,color:"var(--ac2)"}}>{cerrados.length}</span>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column"}}>
+                        <span style={{fontSize:10,color:"var(--mu)"}}>Abiertos</span>
+                        <span style={{fontFamily:"DM Mono",fontSize:16,color:abiertos.length>0?"var(--warn)":"var(--tx)"}}>{abiertos.length}</span>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column"}}>
+                        <span style={{fontSize:10,color:"var(--mu)"}}>Faltantes (cancelados)</span>
+                        <span style={{fontFamily:"DM Mono",fontSize:16,color:cancelados.length>0?"var(--err)":"var(--tx)"}}>{cancelados.length}{montoCancelado>0?` · ${fmt(montoCancelado)}`:""}</span>
+                      </div>
+                    </div>
+                    {cancelados.length>0&&(
+                      <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:4,paddingTop:6,borderTop:"1px solid var(--bd)"}}>
+                        {cancelados.map(f=>(
+                          <div key={f.id} style={{display:"flex",justifyContent:"space-between",fontSize:11}}>
+                            <span>Folio #{f.folio_num} · Mesa {f.table_num} · {f.employee_name||"—"}</span>
+                            <span style={{fontFamily:"DM Mono",color:"var(--err)"}}>{fmt(f.total||0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
