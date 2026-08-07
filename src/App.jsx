@@ -1363,6 +1363,7 @@ export default function App() {
             <button className={`tbtn ${view==="inventory"?"on":""}`} onClick={()=>setView("inventory")}>Inventario</button>
           </>}
           {isGerente&&!isSuperAdmin&&<>
+            <button className={`tbtn ${view==="corte"?"on":""}`} onClick={()=>setView("corte")}>Corte</button>
             <button className={`tbtn ${view==="schedule"?"on":""}`} onClick={()=>setView("schedule")}>📅 Horarios</button>
             <button className={`tbtn ${view==="tables-config"?"on":""}`} onClick={()=>setView("tables-config")}>🪑 Mesas</button>
           </>}
