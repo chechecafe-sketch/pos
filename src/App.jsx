@@ -1075,7 +1075,13 @@ export default function App() {
       });
       const rec=Array.isArray(row)?row[0]:row;
       if(rec?.id){
-        upd(tId,{folioId:rec.id,folioNum:rec.folio_num});
+        // Merge sobre el estado MÁS RECIENTE (no una referencia vieja de orders),
+        // para no pisar items que se hayan agregado mientras el insert viajaba.
+        setOrders(prev=>{
+          const o={...EMPTY,...(prev[tId]||{}),folioId:rec.id,folioNum:rec.folio_num};
+          syncOpenOrder(tId,o);
+          return {...prev,[tId]:o};
+        });
         setFolios(p=>[rec,...p]);
       }
     }catch{}
