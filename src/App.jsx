@@ -137,37 +137,37 @@ const MILK_L = 0.22;
 
 const MENU = {
   "CAFÉ":[
-    {id:"c1", name:"Americano",      medPrice:48, grPrice:53,  station:"barra",hasSizes:true,hasMilk:false,isCold:false},
-    {id:"c2", name:"Capuchino",      medPrice:66, grPrice:71,  station:"barra",hasSizes:true,hasMilk:true, isCold:false},
-    {id:"c3", name:"Flat White",     medPrice:62, grPrice:71,  station:"barra",hasSizes:true,hasMilk:true, isCold:false,isFlatWhite:true},
-    {id:"c4", name:"Latte",          medPrice:71, grPrice:80,  station:"barra",hasSizes:true,hasMilk:true, isCold:false},
-    {id:"c5", name:"Frappé",         medPrice:89, grPrice:99,  station:"barra",hasSizes:true,hasMilk:true, isCold:true},
-    {id:"c6", name:"Paraíso",        medPrice:98, grPrice:108, station:"barra",hasSizes:true,hasMilk:true, isCold:false,fav:true},
-    {id:"c7", name:"Receta Secreta", medPrice:80, grPrice:89,  station:"barra",hasSizes:true,hasMilk:true, isCold:false,fav:true,note:"café o chocolate"},
-    {id:"c8", name:"El Veracruzano", medPrice:80, grPrice:90,  station:"barra",hasSizes:true,hasMilk:false,isCold:true},
-    {id:"c9", name:"Horchata-Café",  medPrice:53, grPrice:63,  station:"barra",hasSizes:true,hasMilk:false,isCold:false,fav:true},
-    {id:"c10",name:"Espresso",       medPrice:35, grPrice:45,  station:"barra",hasSizes:true,hasMilk:false,isCold:false},
-    {id:"c11",name:"Cold Brew",      medPrice:53, grPrice:63,  station:"barra",hasSizes:true,hasMilk:false,isCold:true},
-    {id:"c12",name:"Espresso Tonic", medPrice:71, grPrice:81,  station:"barra",hasSizes:true,hasMilk:false,isCold:false},
-    {id:"c13",name:"Moka",           medPrice:75, grPrice:85,  station:"barra",hasSizes:true,hasMilk:true, isCold:false},
+    {id:"c1", name:"Americano",      price:49, station:"barra",hasMilk:false,isCold:false},
+    {id:"c2", name:"Capuchino",      price:66, station:"barra",hasMilk:true, isCold:false},
+    {id:"c3", name:"Flat White",     price:62, station:"barra",hasMilk:true, isCold:false,isFlatWhite:true},
+    {id:"c4", name:"Latte",          price:71, station:"barra",hasMilk:true, isCold:false},
+    {id:"c5", name:"Frappé",         price:89, station:"barra",hasMilk:true, isCold:true},
+    {id:"c6", name:"Paraíso",        price:98, station:"barra",hasMilk:true, isCold:false,fav:true},
+    {id:"c7", name:"Receta Secreta", price:80, station:"barra",hasMilk:true, isCold:false,fav:true,note:"café o chocolate"},
+    {id:"c8", name:"El Veracruzano", price:89, station:"barra",hasMilk:false,isCold:true},
+    {id:"c9", name:"Horchata-Café",  price:53, station:"barra",hasMilk:false,isCold:false,fav:true},
+    {id:"c10",name:"Espresso",       price:35, station:"barra",hasMilk:false,isCold:false},
+    {id:"c11",name:"Cold Brew",      price:53, station:"barra",hasMilk:false,isCold:true},
+    {id:"c12",name:"Espresso Tonic", price:71, station:"barra",hasMilk:false,isCold:false},
+    {id:"c13",name:"Moka",           price:71, station:"barra",hasMilk:true, isCold:false},
   ],
   "SIN CAFÉ":[
-    {id:"s1",name:"Té",           medPrice:53,grPrice:62,station:"barra",hasSizes:true,hasMilk:false,isCold:false},
-    {id:"s2",name:"Limonada",     medPrice:62,grPrice:72,station:"barra",hasSizes:true,hasMilk:false,isCold:true},
-    {id:"s3",name:"Jugo Verde",   medPrice:71,grPrice:81,station:"barra",hasSizes:true,hasMilk:false,isCold:false},
-    {id:"s4",name:"Matcha",       medPrice:65,grPrice:75,station:"barra",hasSizes:true,hasMilk:true, isCold:false},
-    {id:"s5",name:"Papaya Playa", medPrice:71,grPrice:81,station:"barra",hasSizes:true,hasMilk:false,isCold:false,fav:true},
-    {id:"s6",name:"Chai",         medPrice:66,grPrice:75,station:"barra",hasSizes:true,hasMilk:true, isCold:false},
-    {id:"s7",name:"La Chimba",    medPrice:80,grPrice:90,station:"barra",hasSizes:true,hasMilk:false,isCold:false,fav:true},
-    {id:"s8",name:"Chocolate",    medPrice:65,grPrice:75,station:"barra",hasSizes:true,hasMilk:true, isCold:false},
+    {id:"s1",name:"Té",           price:53,station:"barra",hasMilk:false,isCold:false},
+    {id:"s2",name:"Limonada",     price:62,station:"barra",hasMilk:false,isCold:true},
+    {id:"s3",name:"Jugo Verde",   price:71,station:"barra",hasMilk:false,isCold:false},
+    {id:"s4",name:"Matcha",       price:65,station:"barra",hasMilk:true, isCold:false},
+    {id:"s5",name:"Papaya Playa", price:80,station:"barra",hasMilk:false,isCold:false,fav:true},
+    {id:"s6",name:"Chai",         price:66,station:"barra",hasMilk:true, isCold:false},
+    {id:"s7",name:"La Chimba",    price:80,station:"barra",hasMilk:false,isCold:false,fav:true},
+    {id:"s8",name:"Chocolate",    price:66,station:"barra",hasMilk:true, isCold:false},
   ],
   "TODO EL DÍA":[
     {id:"t1",name:"Chilaquiles V/R",    price:125,station:"cocina",hasFoodExtras:true},
     {id:"t2",name:"Burritos Cochinita", price:152,station:"cocina",hasFoodExtras:true},
-    {id:"t3",name:"Molletes Cochinita", price:161,station:"cocina",hasFoodExtras:true},
+    {id:"t3",name:"Molletes Cochinita", price:162,station:"cocina",hasFoodExtras:true},
     {id:"t4",name:"Sándwich Cubanito",  price:170,station:"cocina",hasFoodExtras:true,fav:true},
     {id:"t5",name:"Sándwich Barcelona", price:161,station:"cocina",hasFoodExtras:true,fav:true},
-    {id:"t6",name:"Sándwich de Tocino", price:170,station:"cocina",hasFoodExtras:true,fav:true},
+    {id:"t6",name:"Sándwich de Tocino", price:161,station:"cocina",hasFoodExtras:true,fav:true},
     {id:"t7",name:"Montecristo",        price:170,station:"cocina",hasFoodExtras:true,fav:true},
   ],
   "LIGEROS":[
@@ -190,10 +190,22 @@ const MENU = {
     {id:"cb3",name:"Combo Panqué", price:62,station:"barra",isCombo:true,note:"bebida + panqué"},
   ],
   "COCTELERÍA":[
-    {id:"k1",name:"Jardín Prohibido",price:116,station:"barra",note:"Romero, Eureka, Jengibre, Tónica",hasCocktailExtras:true},
-    {id:"k2",name:"Vista Al Mar",    price:116,station:"barra",note:"Toronja, Pepino, Romero, Tónica, Limón",hasCocktailExtras:true},
-    {id:"k3",name:"Club Paraíso",    price:116,station:"barra",note:"Piña, Romero, Eureka, Jengibre, Limón",hasCocktailExtras:true},
-    {id:"k4",name:"Cielo Azul",      price:116,station:"barra",note:"Toronja, Curaçao, Limón, Mineral",hasCocktailExtras:true},
+    {id:"k1",name:"Jardín Prohibido",price:107,station:"barra",note:"Romero, Eureka, Jengibre, Tónica",hasCocktailExtras:true},
+    {id:"k2",name:"Vista Al Mar",    price:107,station:"barra",note:"Toronja, Pepino, Romero, Tónica, Limón",hasCocktailExtras:true},
+    {id:"k3",name:"Club Paraíso",    price:107,station:"barra",note:"Piña, Romero, Eureka, Jengibre, Limón",hasCocktailExtras:true},
+    {id:"k4",name:"Cielo Azul",      price:107,station:"barra",note:"Toronja, Curaçao, Limón, Mineral",hasCocktailExtras:true},
+    {id:"k5",name:"Bebidas Evento Café",price:80,station:"barra",note:"Para eventos"},
+    {id:"k6",name:"Suero",           price:80,station:"barra"},
+    {id:"k7",name:"Michelada",       price:98,station:"barra"},
+    {id:"k8",name:"Cerveza",         price:80,station:"barra"},
+    {id:"k9", name:"Capuchino Evento",  price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
+    {id:"k10",name:"Chai Evento",       price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
+    {id:"k11",name:"Moka Evento",       price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
+    {id:"k12",name:"Matcha Evento",     price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
+    {id:"k13",name:"Latte Evento",      price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
+    {id:"k14",name:"Americano Evento",  price:71,station:"barra",hasMilk:false,isCold:false,note:"Precio especial evento"},
+    {id:"k15",name:"Chocolate Evento",  price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
+    {id:"k16",name:"Flat White Evento", price:71,station:"barra",hasMilk:true, isCold:false,isFlatWhite:true,note:"Precio especial evento"},
   ],
 };
 
@@ -246,6 +258,28 @@ const localHour=(d=new Date())=>parseInt(new Intl.DateTimeFormat("es-MX",{timeZo
 const fixTS   = ts=>(ts||"").replace(" ","T").replace(/\+00$/,"+00:00");
 const DAILY_GOAL=8000, WEEKLY_GOAL=50000, MONTHLY_GOAL=200000; // fallback defaults
 const CASH_LIMIT=100, VICTORIA_ID=3;
+const mapCashRow = r=>({id:r.id,type:r.type,amount:r.amount,description:r.description,photo:r.photo||"",employee:r.employee_name,employeeId:r.employee_id,timestamp:r.timestamp,approved:!!r.approved,pendingApproval:!!r.pending_approval,approvedBy:r.approved_by,approvedAt:r.approved_at});
+
+// Compress a receipt photo (data URL) client-side before storing, so it
+// doesn't blow past storage limits and crash the app.
+function compressPhoto(dataUrl, maxDim=900, quality=0.6){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>h){ if(w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;} }
+      else{ if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;} }
+      const canvas=document.createElement("canvas");
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext("2d");
+      ctx.drawImage(img,0,0,w,h);
+      try{resolve(canvas.toDataURL("image/jpeg",quality));}
+      catch{resolve(dataUrl);}
+    };
+    img.onerror=()=>resolve(dataUrl);
+    img.src=dataUrl;
+  });
+}
 
 function calcDailyBonus(s){if(s<1500)return 0;let b=0;const t1=Math.min(s,2500)-1500;if(t1>0)b+=t1*.015;const t2=Math.min(s,4000)-2500;if(t2>0)b+=t2*.025;const t3=s-4000;if(t3>0)b+=t3*.04;return b;}
 function calcWeeklyBonus(avg){if(avg<180)return 0;if(avg<220)return 150;if(avg<280)return 300;return 500;}
@@ -278,7 +312,6 @@ function urgentBeep(){beep(660,200);setTimeout(()=>beep(880,200),250);setTimeout
 
 const UPSELL_TIPS=[
   "🍞 Solo bebida — ¿les ofreciste pan dulce o ligero?",
-  "⬆️ Mediano — el grande son $10 más, ofrécelo.",
   "🥑 Sin comida — el Toast Aguacate y Cubanito son favoritos.",
   "☕ Ticket bajo — ¿ofreciste algo para llevar o postre?",
   "🌰 Leche normal — ¿ofreciste upgrade a almendra o avena?",
@@ -286,13 +319,12 @@ const UPSELL_TIPS=[
 function getUpsell(items){
   if(!items||!items.length)return null;
   const hF=items.some(i=>i.station==="cocina"),hD=items.some(i=>i.station==="barra"),
-        hL=items.some(i=>i.size==="grande"),hS=items.some(i=>i.milk&&(i.milk==="Almendra"||i.milk==="Avena")),
+        hS=items.some(i=>i.milk&&(i.milk==="Almendra"||i.milk==="Avena")),
         tot=items.reduce((s,i)=>s+i.price*i.qty,0);
   if(hD&&!hF)return UPSELL_TIPS[0];
-  if(hD&&!hL)return UPSELL_TIPS[1];
-  if(!hF&&items.length<2)return UPSELL_TIPS[2];
-  if(tot<150)return UPSELL_TIPS[3];
-  if(hD&&!hS)return UPSELL_TIPS[4];
+  if(!hF&&items.length<2)return UPSELL_TIPS[1];
+  if(tot<150)return UPSELL_TIPS[2];
+  if(hD&&!hS)return UPSELL_TIPS[3];
   return null;
 }
 
@@ -341,7 +373,7 @@ const css=`
   --bar:#4a7c99;--kok:#b87c4a;
 }
 body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
-button{cursor:pointer;border:none;font-family:inherit;transition:all .12s;}
+button{cursor:pointer;border:none;font-family:inherit;transition:all .12s;color:inherit;}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
@@ -478,7 +510,7 @@ input,select,textarea{font-family:inherit;}
 .mcard.combo{border-color:#3a2e10;background:#1a1508;}
 .mcard.combo:hover{border-color:var(--ac);background:#201c0a;}
 .mcrow{display:flex;justify-content:space-between;align-items:flex-start;gap:4px;}
-.mcname{font-size:13px;font-weight:600;line-height:1.25;flex:1;}
+.mcname{font-size:13px;font-weight:600;line-height:1.25;flex:1;color:var(--tx);}
 .mcfav{color:var(--ac);font-size:11px;}
 .mcprice{font-family:'DM Mono',monospace;font-size:14px;color:var(--ac);}
 .mcnote{font-size:10px;color:var(--mu);line-height:1.3;}
@@ -793,6 +825,15 @@ input,select,textarea{font-family:inherit;}
 `;
 
 // ═══════════════════════════════════════════════════════
+//  CLOCK (aislado para no re-renderizar toda la app cada segundo)
+// ═══════════════════════════════════════════════════════
+function Clock(){
+  const [t,setT] = useState(new Date());
+  useEffect(()=>{const id=setInterval(()=>setT(new Date()),1000);return()=>clearInterval(id);},[]);
+  return t.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+}
+
+// ═══════════════════════════════════════════════════════
 //  APP
 // ═══════════════════════════════════════════════════════
 export default function App() {
@@ -812,7 +853,6 @@ export default function App() {
   const [rEmp, setREmp]         = useState("all");
   const [rStore, setRStore]     = useState("all");
   const [sFilter, setSFilter]   = useState("day");
-  const [time, setTime]         = useState(new Date());
   const [tick2, setTick2]       = useState(0); // timer tick for table timers
   const [tipDismissed, setTipD] = useState(false);
   const [empMode, setEmpMode]   = useState(false);
@@ -840,7 +880,6 @@ export default function App() {
   });
   const lastPayRef = useRef({});
   const alertedTablesRef = useRef({});
-  const tickRef = useRef();
   const tick2Ref = useRef();
 
   const storeObj = store ? STORES.find(s=>s.id===store) : null;
@@ -864,19 +903,23 @@ export default function App() {
       sb.select("inventory",`?id=eq.${store}`),
       sb.select("emp_consumption"),
       sb.select("folios",`?store_id=eq.${store}&order=folio_num.desc&limit=500`),
-    ]).then(([co,oo,inv,ec,fo])=>{
+      sb.select("cash_movements",`?store_id=eq.${store}&order=timestamp.desc&limit=500`),
+    ]).then(([co,oo,inv,ec,fo,cm])=>{
       if(Array.isArray(co)) setClosed(co);
       if(Array.isArray(oo)){const m={};oo.forEach(r=>{m[r.table_id]=r.data;});setOrders(m);}
       if(Array.isArray(inv)&&inv[0]) setInventory({...DEFAULT_INV,...inv[0].data});
       if(Array.isArray(ec)){const m={};ec.forEach(r=>{m[r.key]=r.data;});setEmpCons(m);}
       if(Array.isArray(fo)) setFolios(fo);
+      if(Array.isArray(cm)){
+        const mapped=cm.map(mapCashRow);
+        setCashLog(mapped.filter(e=>e.approved));
+        setPendingExpenses(mapped.filter(e=>e.pendingApproval&&!e.approved));
+      }
       setSynced(true); setLoading(false);
     }).catch(()=>setLoading(false));
     try{
-      const cl=JSON.parse(localStorage.getItem(`cheche_cash_${store}`)||"[]");
       const at=JSON.parse(localStorage.getItem(`cheche_att_${store}`)||"{}");
-      const pe=JSON.parse(localStorage.getItem(`cheche_pending_${store}`)||"[]");
-      setCashLog(cl);setAttendance(at);setPendingExpenses(pe);
+      setAttendance(at);
     }catch{}
   },[store]);
 
@@ -979,28 +1022,31 @@ export default function App() {
     if(!store) return;
     const poll=async()=>{
       try{
-        const[co,oo,inv]=await Promise.all([
+        const[co,oo,inv,cm]=await Promise.all([
           sb.select("closed_orders",`?store_id=eq.${store}&order=timestamp.desc&limit=500`),
           sb.select("open_orders",`?store_id=eq.${store}`),
           sb.select("inventory",`?id=eq.${store}`),
+          sb.select("cash_movements",`?store_id=eq.${store}&order=timestamp.desc&limit=500`),
         ]);
         if(Array.isArray(co)) setClosed(co);
         if(Array.isArray(oo)){const m={};oo.forEach(r=>{m[r.table_id]=r.data;});setOrders(prev=>({...m,...Object.fromEntries(Object.entries(prev).filter(([k])=>prev[k]?.items?.length>0&&!m[k]))}));}
         if(Array.isArray(inv)&&inv[0]) setInventory({...DEFAULT_INV,...inv[0].data});
+        if(Array.isArray(cm)){
+          const mapped=cm.map(mapCashRow);
+          setCashLog(mapped.filter(e=>e.approved));
+          setPendingExpenses(mapped.filter(e=>e.pendingApproval&&!e.approved));
+        }
         setSynced(true);
       }catch{setSynced(false);}
     };
-    const id=setInterval(poll,5000);
+    const id=setInterval(poll,15000);
     return()=>clearInterval(id);
   },[store]);
 
-  useEffect(()=>{tickRef.current=setInterval(()=>setTime(new Date()),1000);return()=>clearInterval(tickRef.current);},[]);
   // Timer tick for table timers (every 10s)
   useEffect(()=>{tick2Ref.current=setInterval(()=>setTick2(t=>t+1),10000);return()=>clearInterval(tick2Ref.current);},[]);
 
-  useEffect(()=>{if(store)localStorage.setItem(`cheche_cash_${store}`,JSON.stringify(cashLog));},[cashLog,store]);
   useEffect(()=>{if(store)localStorage.setItem(`cheche_att_${store}`,JSON.stringify(attendance));},[attendance,store]);
-  useEffect(()=>{if(store)localStorage.setItem(`cheche_pending_${store}`,JSON.stringify(pendingExpenses));},[pendingExpenses,store]);
 
   // ── TABLE ALERT BEEPS ─────────────────────────────────
   useEffect(()=>{
@@ -1164,16 +1210,24 @@ export default function App() {
     }finally{setIsPaying(false);}
   };
 
-  const addCashEntry=(type,amount,description,photo="")=>{
-    const entry={id:`cash_${Date.now()}`,type,amount,description,photo,employee:employee.name,employeeId:employee.id,timestamp:nowISO(),approved:type==="income"||amount<=CASH_LIMIT,pendingApproval:type==="expense"&&amount>CASH_LIMIT};
-    if(entry.pendingApproval) setPendingExpenses(p=>[...p,entry]);
+  const addCashEntry=async(type,amount,description,photo="")=>{
+    const approved=type==="income"||amount<=CASH_LIMIT;
+    const pendingApproval=type==="expense"&&amount>CASH_LIMIT;
+    const row={store_id:store,type,amount,description,photo:photo||null,employee_id:employee.id,employee_name:employee.name,approved,pending_approval:pendingApproval,timestamp:nowISO()};
+    const saved=await sb.insert("cash_movements",row);
+    const entry=mapCashRow(Array.isArray(saved)&&saved[0]?saved[0]:{...row,id:`tmp_${Date.now()}`});
+    if(entry.pendingApproval&&!entry.approved) setPendingExpenses(p=>[...p,entry]);
     else setCashLog(p=>[entry,...p]);
     return entry;
   };
 
-  const approveExpense=(id)=>{
+  const approveExpense=async(id)=>{
     const exp=pendingExpenses.find(e=>e.id===id);
-    if(exp){setCashLog(p=>[{...exp,approved:true,approvedBy:employee.name,approvedAt:nowISO()},...p]);setPendingExpenses(p=>p.filter(e=>e.id!==id));}
+    if(!exp) return;
+    const approvedBy=employee.name, approvedAt=nowISO();
+    await sb.update("cash_movements",`?id=eq.${id}`,{approved:true,pending_approval:false,approved_by:approvedBy,approved_at:approvedAt});
+    setCashLog(p=>[{...exp,approved:true,approvedBy,approvedAt},...p]);
+    setPendingExpenses(p=>p.filter(e=>e.id!==id));
   };
 
   const checkIn=(shiftId)=>{
@@ -1377,7 +1431,7 @@ export default function App() {
           {pendingExpenses.length>0&&isSuperAdmin&&(
             <button className="tbtn" style={{background:"#200a0a",borderColor:"var(--err)",color:"var(--err)"}} onClick={()=>setModal("pending")}>⚠️ {pendingExpenses.length}</button>
           )}
-          <span className="ttime">{time.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})}</span>
+          <span className="ttime"><Clock/></span>
           <button className="tbtn" onClick={()=>{setEmployee(null);setStore(null);setLoading(true);}}>Salir</button>
         </div>
 
@@ -2553,7 +2607,7 @@ export default function App() {
         </div>
       )}
 
-      {modal==="cash_entry"&&<CashEntryModal employee={employee} onSave={(type,amount,desc,photo)=>{addCashEntry(type,amount,desc,photo);setModal(null);}} onClose={()=>setModal(null)}/>}
+      {modal==="cash_entry"&&<CashEntryModal employee={employee} onSave={async(type,amount,desc,photo)=>{await addCashEntry(type,amount,desc,photo);setModal(null);}} onClose={()=>setModal(null)}/>}
 
       {modal==="checkin"&&(
         <div className="ov" onClick={()=>setModal(null)}>
@@ -2758,8 +2812,27 @@ function MilkEntryModal({milkStock,onSave,onClose}){
 
 function CashEntryModal({employee,onSave,onClose}){
   const [type,setType]=useState("expense");const [amount,setAmount]=useState("");const [desc,setDesc]=useState("");const [photo,setPhoto]=useState("");
+  const [compressing,setCompressing]=useState(false);const [saving,setSaving]=useState(false);
   const amt=parseFloat(amount)||0;const needsApproval=type==="expense"&&amt>100;
-  const handlePhoto=(e)=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=ev=>setPhoto(ev.target.result);r.readAsDataURL(f);}};
+  const handlePhoto=(e)=>{
+    const f=e.target.files[0];
+    if(!f) return;
+    setCompressing(true);
+    const r=new FileReader();
+    r.onload=async ev=>{
+      const compressed=await compressPhoto(ev.target.result);
+      setPhoto(compressed);
+      setCompressing(false);
+    };
+    r.onerror=()=>setCompressing(false);
+    r.readAsDataURL(f);
+  };
+  const handleSave=async()=>{
+    if(saving) return;
+    setSaving(true);
+    try{ await onSave(type,amt,desc,photo); }
+    finally{ setSaving(false); }
+  };
   return(
     <div className="ov" onClick={onClose}>
       <div className="mod" onClick={e=>e.stopPropagation()}>
@@ -2776,8 +2849,9 @@ function CashEntryModal({employee,onSave,onClose}){
         <input className="minput" type="text" placeholder="Ej. Compra de vasos, limpieza…" value={desc} onChange={e=>setDesc(e.target.value)}/>
         <span className="mlabel2">Foto del comprobante</span>
         <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{color:"var(--tx)",fontSize:13}}/>
-        {photo&&<img src={photo} alt="preview" style={{width:"100%",borderRadius:8,maxHeight:160,objectFit:"cover"}}/>}
-        <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" disabled={!amount||!desc} onClick={()=>onSave(type,amt,desc,photo)}>{needsApproval?"Enviar a Victoria":"Registrar"}</button></div>
+        {compressing&&<div style={{fontSize:12,color:"var(--mu)"}}>Procesando foto…</div>}
+        {photo&&!compressing&&<img src={photo} alt="preview" style={{width:"100%",borderRadius:8,maxHeight:160,objectFit:"cover"}}/>}
+        <div className="mbtns"><button className="mb" onClick={onClose} disabled={saving}>Cancelar</button><button className="mb p" disabled={!amount||!desc||compressing||saving} onClick={handleSave}>{saving?"Guardando…":needsApproval?"Enviar a Victoria":"Registrar"}</button></div>
       </div>
     </div>
   );
