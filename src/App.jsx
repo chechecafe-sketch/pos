@@ -281,6 +281,42 @@ function compressPhoto(dataUrl, maxDim=900, quality=0.6){
   });
 }
 
+// Ancho del rollo térmico. 80mm es el más común en cafeterías; si compran
+// una impresora de 58mm, cambiar este único valor ajusta todos los tickets.
+const TICKET_WIDTH_MM = 80;
+
+// Imprime HTML de un ticket sin abrir una pestaña/ventana nueva (los popups
+// se bloquean seguido en Android y no funcionan si la app corre instalada
+// como app de pantalla de inicio). Usa un iframe oculto: se manda a
+// imprimir directo y desaparece solo. @page ya viene ajustado al ancho del
+// rollo térmico para que no truene con márgenes/encabezados del navegador.
+function doPrint(bodyHtml){
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Ticket</title><style>
+    @page{size:${TICKET_WIDTH_MM}mm auto;margin:0;}
+    *{box-sizing:border-box;}
+    body{font-family:'DM Mono',ui-monospace,'Courier New',monospace;font-size:12px;white-space:pre-wrap;word-break:break-word;margin:0;padding:4mm;width:${TICKET_WIDTH_MM}mm;color:#000;background:#fff;}
+    hr{border:none;border-top:1px dashed #000;margin:4px 0;}
+  </style></head><body>${bodyHtml}</body></html>`;
+  const iframe=document.createElement("iframe");
+  iframe.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;";
+  iframe.setAttribute("aria-hidden","true");
+  document.body.appendChild(iframe);
+  const cleanup=()=>{ if(iframe.parentNode) iframe.parentNode.removeChild(iframe); };
+  iframe.onload=()=>{
+    setTimeout(()=>{
+      try{
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }catch(e){}
+      // Algunos navegadores disparan afterprint, otros no — quitamos el
+      // iframe pase lo que pase para no dejar basura en el DOM.
+      try{ iframe.contentWindow.addEventListener("afterprint",cleanup,{once:true}); }catch(e){}
+      setTimeout(cleanup,1500);
+    },60);
+  };
+  iframe.srcdoc=html;
+}
+
 function calcDailyBonus(s){if(s<1500)return 0;let b=0;const t1=Math.min(s,2500)-1500;if(t1>0)b+=t1*.015;const t2=Math.min(s,4000)-2500;if(t2>0)b+=t2*.025;const t3=s-4000;if(t3>0)b+=t3*.04;return b;}
 function calcWeeklyBonus(avg){if(avg<180)return 0;if(avg<220)return 150;if(avg<280)return 300;return 500;}
 function calcGroupBonus(pct){if(pct<.8)return 0;if(pct<.9)return 300;if(pct<1)return 600;return 1000;}
@@ -363,7 +399,7 @@ function formatElapsed(seatedAt){
 // ═══════════════════════════════════════════════════════
 const css=`
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation;}
 :root{
   --bg:#0f0f0e;--sf:#181816;--sf2:#202020;--sf3:#282826;
   --bd:#2a2a28;--bd2:#363634;
@@ -373,7 +409,9 @@ const css=`
   --bar:#4a7c99;--kok:#b87c4a;
 }
 body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100dvh;-webkit-font-smoothing:antialiased;}
-button{cursor:pointer;border:none;font-family:inherit;transition:all .12s;color:inherit;}
+button{cursor:pointer;border:none;font-family:inherit;transition:transform .08s ease-out,background .12s,border-color .12s,filter .12s,opacity .12s;color:inherit;}
+/* Feedback táctil instantáneo: el botón se "hunde" apenas se toca, sin esperar a que responda la red */
+button:not(:disabled):active{transform:scale(.95);}
 input,select,textarea{font-family:inherit;}
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px;}
@@ -478,6 +516,7 @@ input,select,textarea{font-family:inherit;}
 .table-view-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:14px;overflow-y:auto;align-content:start;}
 .table-card{background:var(--sf);border:2px solid var(--bd);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
 .table-card:hover{transform:translateY(-2px);}
+.table-card:active{transform:scale(.96);}
 .table-card.empty{opacity:.6;}
 .table-card.occupied{border-color:var(--ac2);}
 .table-card.alert-drinks{border-color:var(--ac);}
@@ -2558,8 +2597,8 @@ export default function App() {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,width:"100%"}}>
               <button className="mb" style={{borderColor:"var(--ac3)",color:"var(--ac3)"}} onClick={()=>{
                 const o=mdata.order;if(!o)return;
-                const win=window.open("","_blank","width=300,height=600");
-                if(win){const lines=(o.items||[]).map(i=>`${i.qty}x ${i.name}  $${(i.price*i.qty).toFixed(0)}`).join("<br>");win.document.write(`<html><head><title>Ticket</title><style>body{font-family:monospace;font-size:14px;margin:8px;line-height:1.6;}@media print{body{margin:0;}}</style></head><body><div style="text-align:center"><b>CHE' CHE' CAFE</b></div><div style="text-align:center">${o.store_name||""}</div><div style="text-align:center">Mesa ${o.table_num} &nbsp; ${o.mode==="takeout"?"PARA LLEVAR":"SALON"}</div><hr/>${lines}<hr/>${o.discount_label?`<div>Descuento: -$${((o.subtotal_before_disc||0)-(o.subtotal||0)).toFixed(0)}</div>`:""}<b>TOTAL: $${o.subtotal.toFixed(0)}</b><br/>Método: ${o.method}${o.tip>0?`<br/>Propina: $${o.tip.toFixed(0)}`:""}<hr/><div style="text-align:center">¡Gracias!</div></body></html>`);win.document.close();setTimeout(()=>win.print(),300);}
+                const lines=(o.items||[]).map(i=>`${i.qty}x ${i.name}  $${(i.price*i.qty).toFixed(0)}`).join("<br>");
+                doPrint(`<div style="text-align:center"><b>CHE' CHE' CAFE</b></div><div style="text-align:center">${o.store_name||""}</div><div style="text-align:center">Mesa ${o.table_num} &nbsp; ${o.mode==="takeout"?"PARA LLEVAR":"SALON"}</div><hr/>${lines}<hr/>${o.discount_label?`<div>Descuento: -$${((o.subtotal_before_disc||0)-(o.subtotal||0)).toFixed(0)}</div>`:""}<b>TOTAL: $${o.subtotal.toFixed(0)}</b><br/>Método: ${o.method}${o.tip>0?`<br/>Propina: $${o.tip.toFixed(0)}`:""}<hr/><div style="text-align:center">¡Gracias!</div>`);
               }}>🖨️ Ticket</button>
               <button className="mb p" onClick={()=>setModal(null)}>Continuar →</button>
             </div>
@@ -2687,8 +2726,7 @@ export default function App() {
       if(discount)content+=`Descuento ${discount.label}: -$${discAmount.toFixed(0)}\n`;
       content+=`TOTAL: $${total.toFixed(0)}\n================================\n   ¡Gracias por su visita!\n================================\n`;
     }
-    const win=window.open("","_blank","width=300,height=600");
-    if(win){win.document.write(`<html><head><title>Ticket</title><style>body{font-family:monospace;font-size:14px;white-space:pre;margin:8px;line-height:1.4;}@media print{body{margin:0;font-size:12px;}}</style></head><body>${content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>")}</body></html>`);win.document.close();setTimeout(()=>win.print(),300);}
+    doPrint(content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"));
   }
 }
 
