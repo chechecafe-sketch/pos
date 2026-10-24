@@ -67,14 +67,13 @@ const STORE_EMPLOYEES = {
     {id:503,name:"Violeta",   pin:"5030",role:"mesero"},
   ],
   "jardin":[
-    {id:601,name:"Giselle Aguilar", pin:"8787",role:"gerente"},
-    {id:603,name:"Javier Ruíz",     pin:"3333",role:"mesero"},
-    {id:610,name:"Dulce",           pin:"4444",role:"mesero"},
-    {id:611,name:"Karla",           pin:"2222",role:"mesero"},
-    {id:606,name:"Magali Cortés",   pin:"6061",role:"gerente"},
+    {id:606,name:"Magali Cortés",   pin:"6061",role:"mesero"},
     {id:607,name:"Briza Guzmán",    pin:"6071",role:"mesero"},
-    {id:608,name:"Francisco Perea", pin:"6081",role:"mesero"},
     {id:609,name:"Invitado",        pin:"1111",role:"mesero"},
+    {id:612,name:"Jay",             pin:"6091",role:"mesero"},
+    {id:613,name:"Arturo",          pin:"6101",role:"mesero"},
+    {id:614,name:"Sofía",           pin:"6111",role:"mesero"},
+    {id:615,name:"Viviana",         pin:"6121",role:"cocina"},
   ],
 };
 
@@ -1737,7 +1736,7 @@ export default function App() {
                   <div className="ofoot">
                     <div className="trow"><span>Subtotal</span><span>{fmt(subtotalBeforeDisc)}</span></div>
                     <div className="disc-toggle">
-                      {DISCOUNTS.filter(d=>!d.adminOnly||employee.role!=="mesero").map(d=>(
+                      {DISCOUNTS.filter(d=>!d.adminOnly||employee.role!=="mesero"&&employee.role!=="cocina").map(d=>(
                         <button key={d.id} className={`disc-btn ${discount?.id===d.id?"on":""}`}
                           onClick={()=>{
                             if(d.id==="custom"){const p=prompt("% de descuento:");if(p){const pct=parseFloat(p)/100;if(pct>0&&pct<=1)setDiscount({id:"custom",pct,label:`Descuento ${p}%`});}}
@@ -1941,7 +1940,7 @@ export default function App() {
                       <button className="wiz-add-more-btn" onClick={()=>setMobStep("category")}>+ Agregar más productos</button>
                       <div className="trow"><span>Subtotal</span><span>{fmt(subtotalBeforeDisc)}</span></div>
                       <div className="disc-toggle">
-                        {DISCOUNTS.filter(d=>!d.adminOnly||employee.role!=="mesero").map(d=>(
+                        {DISCOUNTS.filter(d=>!d.adminOnly||employee.role!=="mesero"&&employee.role!=="cocina").map(d=>(
                           <button key={d.id} className={`disc-btn ${discount?.id===d.id?"on":""}`}
                             onClick={()=>{
                               if(d.id==="custom"){const p=prompt("% de descuento:");if(p){const pct=parseFloat(p)/100;if(pct>0&&pct<=1)setDiscount({id:"custom",pct,label:`Descuento ${p}%`});}}
@@ -3227,7 +3226,7 @@ function ScheduleManager({store,stores,isSuperAdmin,storeEmployees,globalAdmins,
                   <td>
                     <div className="emp-row-name">{emp.name}</div>
                     <div style={{fontSize:10,color:"var(--mu)",paddingLeft:8,fontFamily:"DM Mono,monospace"}}>
-                      {emp.role==="gerente"?"Gerente":"Barista"}
+                      {emp.role==="gerente"?"Gerente":emp.role==="cocina"?"Cocina":"Barista"}
                     </div>
                   </td>
                   {[0,1,2,3,4,5,6].map(day=>{
@@ -3562,7 +3561,7 @@ function LoginScreen({store,employees,onLogin,onBack}){
                   <button key={e.id} className="ecard" onClick={()=>handleSelectEmp(e)}>
                     <div className="eavatar" style={{fontSize:22}}>{av}</div>
                     <span className="ename">{e.name}</span>
-                    <span className="erole">{e.role==="gerente"?"Gerente":e.role==="superadmin"?"Global":e.role==="admin"?"Admin":"Barista"}</span>
+                    <span className="erole">{e.role==="gerente"?"Gerente":e.role==="superadmin"?"Global":e.role==="admin"?"Admin":e.role==="cocina"?"Cocina":"Barista"}</span>
                     {(e.role==="admin"||e.role==="superadmin")&&<span className="abadge">{e.role==="superadmin"?"GLOBAL":"ADMIN"}</span>}
                     {e.role==="gerente"&&<span className="abadge" style={{background:"#1a1a2e",color:"var(--ac3)",borderColor:"var(--ac3)44"}}>GERENTE</span>}
                   </button>
