@@ -284,6 +284,9 @@ function compressPhoto(dataUrl, maxDim=900, quality=0.6){
 // una impresora de 58mm, cambiar este único valor ajusta todos los tickets.
 const TICKET_WIDTH_MM = 80;
 
+// Correo al que los clientes mandan sus datos fiscales para pedir factura.
+const INVOICE_EMAIL = "facturacion.cheche@gmail.com";
+
 // Imprime HTML de un ticket sin abrir una pestaña/ventana nueva (los popups
 // se bloquean seguido en Android y no funcionan si la app corre instalada
 // como app de pantalla de inicio). Usa un iframe oculto: se manda a
@@ -2721,11 +2724,12 @@ export default function App() {
       if(barraItems.length){content+=`================================\n   CHE CHE CAFE - ${storeObj?.short||""} - BARRA\n================================\nMesa ${selTable}  ${mode}  ${now}\n--------------------------------\n${formatItems(barraItems)}\n`;if(cur.note)content+=`--------------------------------\nNota: ${cur.note}\n`;content+=`================================\n\n`;}
       if(cocinaItems.length){content+=`================================\n   CHE CHE CAFE - ${storeObj?.short||""} - COCINA\n================================\nMesa ${selTable}  ${mode}  ${now}\n--------------------------------\n${formatItems(cocinaItems)}\n`;if(cur.note)content+=`--------------------------------\nNota: ${cur.note}\n`;content+=`================================\n`;}
     }else{
-      content+=`================================\n       CHE' CHE' CAFE\n   ${storeObj?.name||""}\n================================\n${date}  ${now}\nMesa: ${selTable}  ${mode}\nAtendio: ${employee.name}\n--------------------------------\n${formatItems(items)}\n--------------------------------\n`;
+      content+=`   ${storeObj?.name||""}\n================================\n${date}  ${now}\nMesa: ${selTable}  ${mode}\nAtendio: ${employee.name}\n--------------------------------\n${formatItems(items)}\n--------------------------------\n`;
       if(discount)content+=`Descuento ${discount.label}: -$${discAmount.toFixed(0)}\n`;
-      content+=`TOTAL: $${total.toFixed(0)}\n================================\n   ¡Gracias por su visita!\n================================\n`;
+      content+=`TOTAL: $${total.toFixed(0)}\n================================\n   ¡Gracias por su visita!\n================================\n\n¿Necesita factura?\nEnvíe sus datos fiscales y este\nticket a:\n${INVOICE_EMAIL}\n`;
     }
-    doPrint(content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"));
+    const logoHtml=type==="ticket"?`<div style="text-align:center;white-space:normal;"><img src="${CHECHE_LOGO}" alt="Che Che Café" style="width:45mm;height:auto;filter:invert(1);"/></div>`:"";
+    doPrint(logoHtml+content.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"));
   }
 }
 
