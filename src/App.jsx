@@ -70,7 +70,7 @@ const STORE_EMPLOYEES = {
     {id:606,name:"Magali Cortés",   pin:"6061",role:"mesero"},
     {id:607,name:"Briza Guzmán",    pin:"6071",role:"mesero"},
     {id:609,name:"Invitado",        pin:"1111",role:"mesero"},
-    {id:612,name:"Jay",             pin:"6091",role:"mesero"},
+    {id:612,name:"Jay",             pin:"6091",role:"gerente"},
     {id:613,name:"Arturo",          pin:"6101",role:"mesero"},
     {id:614,name:"Sofía",           pin:"6111",role:"mesero"},
     {id:615,name:"Viviana",         pin:"6121",role:"cocina"},
