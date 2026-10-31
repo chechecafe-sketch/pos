@@ -160,6 +160,10 @@ const MENU = {
     {id:"s6",name:"Chai",         price:66,station:"barra",hasMilk:true, isCold:false},
     {id:"s7",name:"La Chimba",    price:80,station:"barra",hasMilk:false,isCold:false,fav:true},
     {id:"s8",name:"Chocolate",    price:66,station:"barra",hasMilk:true, isCold:false},
+    {id:"m1",name:"Malteada Matcha",   price:98,station:"barra",hasMilk:true,isCold:true},
+    {id:"m2",name:"Malteada Chocolate",price:98,station:"barra",hasMilk:true,isCold:true},
+    {id:"m3",name:"Malteada Vainilla", price:98,station:"barra",hasMilk:true,isCold:true},
+    {id:"m4",name:"Malteada Chai",     price:98,station:"barra",hasMilk:true,isCold:true},
   ],
   "TODO EL DÍA":[
     {id:"t1",name:"Chilaquiles V/R",    price:125,station:"cocina",hasFoodExtras:true},
@@ -169,6 +173,18 @@ const MENU = {
     {id:"t5",name:"Sándwich Barcelona", price:161,station:"cocina",hasFoodExtras:true,fav:true},
     {id:"t6",name:"Sándwich de Tocino", price:161,station:"cocina",hasFoodExtras:true,fav:true},
     {id:"t7",name:"Montecristo",        price:170,station:"cocina",hasFoodExtras:true,fav:true},
+  ],
+  "DESAYUNOS":[
+    {id:"d1", name:"Pattie de desayuno",   price:175,station:"cocina"},
+    {id:"d2", name:"Pattie",               price:160,station:"cocina"},
+    {id:"d3", name:"Cheese burger",        price:165,station:"cocina"},
+    {id:"d4", name:"Hot cakes (orden de 3)",price:150,station:"cocina"},
+    {id:"d5", name:"Sándwich Elvis",       price:110,station:"cocina"},
+    {id:"d6", name:"Papas originales",     price:80, station:"cocina"},
+    {id:"d7", name:"Bravas",               price:110,station:"cocina"},
+    {id:"d8", name:"Extra tocino (2 reb.)",price:70, station:"cocina"},
+    {id:"d9", name:"Extra lechera",        price:20, station:"cocina"},
+    {id:"d10",name:"Extra mermelada",      price:20, station:"cocina"},
   ],
   "LIGEROS":[
     {id:"l1",name:"Bowl Frutos Rojos",price:152,station:"cocina"},
@@ -1858,7 +1874,7 @@ export default function App() {
                   <div className="wiz-title">{cur.mode==="takeout"?"🛍 Para llevar":`Mesa ${selTable}`} — elige categoría</div>
                   <div className="wiz-cat-grid">
                     {Object.keys(MENU).map(cat=>{
-                      const icon={"CAFÉ":"☕","SIN CAFÉ":"🧊","TODO EL DÍA":"🍽","LIGEROS":"🥗","PAN DULCE":"🥐","COMBOS":"🎁","COCTELERÍA":"🍹"}[cat]||"🍴";
+                      const icon={"CAFÉ":"☕","SIN CAFÉ":"🧊","TODO EL DÍA":"🍽","DESAYUNOS":"🍳","LIGEROS":"🥗","PAN DULCE":"🥐","COMBOS":"🎁","COCTELERÍA":"🍹"}[cat]||"🍴";
                       return(
                         <button key={cat} className="wiz-cat-card" onClick={()=>{setCat(cat);setMobStep("items");}}>
                           <span className="wcc-icon">{icon}</span>
