@@ -175,9 +175,9 @@ const MENU = {
     {id:"t7",name:"Montecristo",        price:170,station:"cocina",hasFoodExtras:true,fav:true},
   ],
   "DESAYUNOS":[
-    {id:"d1", name:"Pattie de desayuno",   price:175,station:"cocina"},
-    {id:"d2", name:"Pattie",               price:160,station:"cocina"},
-    {id:"d3", name:"Cheese burger",        price:165,station:"cocina"},
+    {id:"d1", name:"Pattie de desayuno",   price:190,station:"cocina"},
+    {id:"d2", name:"Pattie",               price:190,station:"cocina"},
+    {id:"d3", name:"Cheese burger",        price:190,station:"cocina"},
     {id:"d4", name:"Hot cakes (orden de 3)",price:150,station:"cocina"},
     {id:"d5", name:"Sándwich Elvis",       price:110,station:"cocina"},
     {id:"d6", name:"Papas originales",     price:80, station:"cocina"},
