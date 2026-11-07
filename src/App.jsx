@@ -176,7 +176,7 @@ const MENU = {
   ],
   "DESAYUNOS":[
     {id:"d1", name:"Pattie de desayuno",   price:190,station:"cocina"},
-    {id:"d2", name:"Pattie",               price:160,station:"cocina"},
+    {id:"d2", name:"Pattie",               price:190,station:"cocina"},
     {id:"d3", name:"Cheese burger",        price:190,station:"cocina"},
     {id:"d4", name:"Hot cakes (orden de 3)",price:150,station:"cocina"},
     {id:"d5", name:"Sándwich Elvis",       price:110,station:"cocina"},
