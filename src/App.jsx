@@ -15,6 +15,9 @@ const sb = {
   async upsert(t,d){try{const r=await fetch(this.url(t),{method:"POST",headers:{...this.h,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(d)});return r.json();}catch{return null;}},
   async insert(t,d){try{const r=await fetch(this.url(t),{method:"POST",headers:this.h,body:JSON.stringify(d)});return r.json();}catch{return null;}},
   async delete(t,q){try{await fetch(this.url(t,q),{method:"DELETE",headers:this.h});}catch{}},
+  // Variantes ESTRICTAS: lanzan error si el servidor responde con error (sb.insert/sb.delete lo ocultan).
+  async upsertStrict(t,d){const r=await fetch(this.url(t),{method:"POST",headers:{...this.h,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(d)});if(!r.ok)throw new Error(`${t}: ${r.status}`);return r.json();},
+  async deleteStrict(t,q){const r=await fetch(this.url(t,q),{method:"DELETE",headers:this.h});if(!r.ok)throw new Error(`${t}: ${r.status}`);},
   async update(t,q,d){try{const r=await fetch(this.url(t,q),{method:"PATCH",headers:this.h,body:JSON.stringify(d)});return r.json();}catch{return null;}},
 };
 
@@ -421,7 +424,7 @@ const css=`
   --bg:#0f0f0e;--sf:#181816;--sf2:#202020;--sf3:#282826;
   --bd:#2a2a28;--bd2:#363634;
   --ac:#c8a96e;--ac2:#8fb87a;--ac3:#7aace0;
-  --err:#c46b5a;--warn:#d4955a;
+  --err:#c46b5a;--warn:#d4955a;--paid:#3fb96a;
   --tx:#e8e6e0;--mu:#7a7875;--mu2:#555350;
   --bar:#4a7c99;--kok:#b87c4a;
 }
@@ -499,7 +502,7 @@ input,select,textarea{font-family:inherit;}
 .ptitle{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--mu);text-transform:uppercase;padding-bottom:7px;border-bottom:1px solid var(--bd);margin-bottom:1px;}
 
 /* TABLE BUTTONS */
-.tbtn2{background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px 9px;text-align:left;display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden;}
+.tbtn2{flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px 9px;text-align:left;display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden;}
 .tbtn2.on{border-color:var(--ac);background:#1c1a10;}
 .tbtn2.occ::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--ac2);position:absolute;top:7px;right:7px;}
 .tbtn2.alert-drinks{border-color:var(--ac)!important;animation:none;}
@@ -535,7 +538,12 @@ input,select,textarea{font-family:inherit;}
 .table-card:hover{transform:translateY(-2px);}
 .table-card:active{transform:scale(.96);}
 .table-card.empty{opacity:.6;}
-.table-card.occupied{border-color:var(--ac2);}
+.table-card.occupied{border-color:var(--ac);}
+.table-card.paid,.tbtn2.paid,.wiz-table-card.paid{border-color:var(--paid)!important;background:#10281a!important;opacity:1!important;animation:none!important;}
+.table-card.paid .paid-tag{font-weight:800;font-size:14px;color:var(--paid);letter-spacing:.06em;}
+.paid-banner{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:6px;background:#10281a;border:2px solid var(--paid);border-radius:14px;margin:8px;padding:24px 12px;text-align:center;}
+.pb-icon{font-size:40px;}.pb-title{font-size:15px;font-weight:800;letter-spacing:.12em;color:var(--paid);}
+.pb-total{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:#e8f5ec;}.pb-sub{font-size:11px;color:#9fd1b0;}
 .table-card.alert-drinks{border-color:var(--ac);}
 .table-card.alert-check{border-color:var(--warn);}
 .table-card.alert-upsell{border-color:var(--err);animation:flash 1.5s infinite;}
@@ -922,6 +930,7 @@ export default function App() {
   const [pendingExpenses, setPendingExpenses] = useState([]);
   const [discount, setDiscount] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
+  const [paidFlash, setPaidFlash] = useState({}); // mesas recién cobradas: se ven en verde unos segundos
   const [tableConfig, setTableConfig] = useState({}); // {storeId: [{id,name,capacity,x,y,shape}]}
   const [telemetryData, setTelemetryData] = useState({}); // {storeId: {orders,closed,...}}
   const [draggingTable, setDraggingTable] = useState(null);
@@ -935,6 +944,8 @@ export default function App() {
     return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City'}).format(mon);
   });
   const lastPayRef = useRef({});
+  const paidFoliosRef = useRef(new Set()); // folios cobrados en esta sesión: el sondeo no debe revivirlos
+  const payAttemptRef = useRef({});        // id de venta estable por mesa: reintentar no duplica
   const alertedTablesRef = useRef({});
   const tick2Ref = useRef();
 
@@ -962,7 +973,10 @@ export default function App() {
       sb.select("cash_movements",`?store_id=eq.${store}&order=timestamp.desc&limit=500`),
     ]).then(([co,oo,inv,ec,fo,cm])=>{
       if(Array.isArray(co)) setClosed(co);
-      if(Array.isArray(oo)){const m={};oo.forEach(r=>{m[r.table_id]=r.data;});setOrders(m);}
+      if(Array.isArray(oo)){
+        const done=new Set(Array.isArray(fo)?fo.filter(f=>f.status!=="abierto").map(f=>f.id):[]);
+        const m={};oo.forEach(r=>{if(!(r.data?.folioId&&done.has(r.data.folioId)))m[r.table_id]=r.data;});setOrders(m);
+      }
       if(Array.isArray(inv)&&inv[0]) setInventory({...DEFAULT_INV,...inv[0].data});
       if(Array.isArray(ec)){const m={};ec.forEach(r=>{m[r.key]=r.data;});setEmpCons(m);}
       if(Array.isArray(fo)) setFolios(fo);
@@ -1078,14 +1092,23 @@ export default function App() {
     if(!store) return;
     const poll=async()=>{
       try{
-        const[co,oo,inv,cm]=await Promise.all([
+        const[co,oo,inv,cm,fo]=await Promise.all([
           sb.select("closed_orders",`?store_id=eq.${store}&order=timestamp.desc&limit=500`),
           sb.select("open_orders",`?store_id=eq.${store}`),
           sb.select("inventory",`?id=eq.${store}`),
           sb.select("cash_movements",`?store_id=eq.${store}&order=timestamp.desc&limit=500`),
+          sb.select("folios",`?store_id=eq.${store}&status=neq.abierto&order=created_at.desc&limit=200`),
         ]);
+        // Folios ya cobrados/cancelados: sus cuentas NO deben reaparecer en pantalla.
+        const doneFolios=new Set([...paidFoliosRef.current,...(Array.isArray(fo)?fo.map(f=>f.id):[])]);
+        const isDone=d=>!!(d?.folioId&&doneFolios.has(d.folioId));
         if(Array.isArray(co)) setClosed(co);
-        if(Array.isArray(oo)){const m={};oo.forEach(r=>{m[r.table_id]=r.data;});setOrders(prev=>({...m,...Object.fromEntries(Object.entries(prev).filter(([k])=>prev[k]?.items?.length>0&&!m[k]))}));}
+        if(Array.isArray(oo)){
+          // Cuentas fantasma en el servidor (ya cobradas): se borran y no se muestran.
+          oo.filter(r=>isDone(r.data)).forEach(r=>sb.delete("open_orders",`?table_id=eq.${r.table_id}&store_id=eq.${store}`));
+          const m={};oo.forEach(r=>{if(!isDone(r.data))m[r.table_id]=r.data;});
+          setOrders(prev=>({...m,...Object.fromEntries(Object.entries(prev).filter(([k])=>prev[k]?.items?.length>0&&!m[k]&&!isDone(prev[k])))}));
+        }
         if(Array.isArray(inv)&&inv[0]) setInventory({...DEFAULT_INV,...inv[0].data});
         if(Array.isArray(cm)){
           const mapped=cm.map(mapCashRow);
@@ -1210,12 +1233,15 @@ export default function App() {
   // Limpiar una mesa/cuenta: si tenía folio abierto con items, se marca cancelado (queda registrado)
   const clearOrder=(tId)=>{
     const o=orders[tId]||EMPTY;
-    if(o.folioId&&o.items&&o.items.length>0) cancelFolio(o.folioId,o.items);
+    const fol=folios.find(f=>f.id===o.folioId);
+    const yaCobrada=!!o.folioId&&(paidFoliosRef.current.has(o.folioId)||(fol&&fol.status!=="abierto"));
+    if(o.folioId&&o.items&&o.items.length>0&&!yaCobrada) cancelFolio(o.folioId,o.items);
     upd(tId,{items:[],seatedAt:null,lastOrderAt:null,folioId:null,folioNum:null});
   };
 
   const addItem=(item)=>{
     setTipD(false);
+    setPaidFlash(p=>{if(!p[selTable])return p;const n={...p};delete n[selTable];return n;});
     const c=orders[selTable]||EMPTY;const items=c.items||[];
     const idx=items.findIndex(i=>i.id===item.id&&i.size===item.size&&i.milk===item.milk&&JSON.stringify(i.extras)===JSON.stringify(item.extras));
     const ni=idx>=0?items.map((it,j)=>j===idx?{...it,qty:it.qty+1}:it):[...items,{...item,qty:1,lineId:`${item.id}_${Date.now()}`}];
@@ -1237,6 +1263,15 @@ export default function App() {
     else addItem({...item,price:item.price||item.medPrice,size:null,milk:null,extras:[]});
   };
 
+  // Borra la cuenta abierta del servidor. La venta ya está guardada, así que si falla se reintenta.
+  const removeOpenOrder=async(tId,tries=4)=>{
+    for(let i=0;i<tries;i++){
+      try{await sb.deleteStrict("open_orders",`?table_id=eq.${tId}&store_id=eq.${store}`);return true;}
+      catch{await new Promise(r=>setTimeout(r,1500*(i+1)));}
+    }
+    return false;
+  };
+
   const handlePay=async(method,cashAmt,cardAmt,tipAmt)=>{
     if(isPaying)return;
     const lastPay=lastPayRef.current[selTable];
@@ -1244,25 +1279,35 @@ export default function App() {
     if(!cur.items||cur.items.length===0)return;
     setIsPaying(true);
     lastPayRef.current[selTable]=Date.now();
-    setOrders(p=>{const n={...p};delete n[selTable];return n;});
-    setModal(null);
+    const tId=selTable, snap=cur;
+    // Mismo id en cada intento: si hay que reintentar, la venta no se duplica (upsert por id).
+    const orderId=payAttemptRef.current[tId]||(payAttemptRef.current[tId]=`ord_${Date.now()}`);
     try{
-      logConsumption(cur.items||[],cur.mode);
-      const breadSold=(cur.items||[]).filter(i=>i.station==="barra"&&i.id.startsWith("p")).reduce((s,i)=>s+i.qty,0);
+      const o={id:orderId,table_num:tId,store_id:store,store_name:storeObj?.name||"",employee:employee.name,employee_id:employee.id,items:[...snap.items],comensales:snap.comensales,mode:snap.mode,subtotal:total,subtotal_before_disc:subtotalBeforeDisc,discount_label:discount?.label||null,discount_pct:discount?.pct||0,method,cash_amt:cashAmt||0,card_amt:cardAmt||0,tip:tipAmt||0,timestamp:nowISO()};
+      // 1) Guardar la venta y CONFIRMAR. Si falla, la cuenta sigue abierta y se puede reintentar.
+      await sb.upsertStrict("closed_orders",o);
+      // 2) Venta guardada = cuenta cobrada. Se quita del carrito y la mesa se marca COBRADA.
+      delete payAttemptRef.current[tId];
+      if(snap.folioId) paidFoliosRef.current.add(snap.folioId);
+      setOrders(p=>{const n={...p};delete n[tId];return n;});
+      setModal(null);
+      logConsumption(snap.items||[],snap.mode);
+      const breadSold=(snap.items||[]).filter(i=>i.station==="barra"&&i.id.startsWith("p")).reduce((s,i)=>s+i.qty,0);
       if(breadSold>0){const t=dayKey();const b={...(inventory.bread||{})};if(!b[t])b[t]={arrived:0,waste:0,sold:0};b[t].sold=(b[t].sold||0)+breadSold;syncInventory({...inventory,bread:b});}
-      const o={id:`ord_${Date.now()}`,table_num:selTable,store_id:store,store_name:storeObj?.name||"",employee:employee.name,employee_id:employee.id,items:[...cur.items],comensales:cur.comensales,mode:cur.mode,subtotal:total,subtotal_before_disc:subtotalBeforeDisc,discount_label:discount?.label||null,discount_pct:discount?.pct||0,method,cash_amt:cashAmt||0,card_amt:cardAmt||0,tip:tipAmt||0,timestamp:nowISO()};
-      await sb.insert("closed_orders",o);
-      await sb.delete("open_orders",`?table_id=eq.${selTable}&store_id=eq.${store}`);
-      if(cur.folioId) closeFolio(cur.folioId,o.id,total);
-      // Clear alert tracking for this table
-      Object.keys(alertedTablesRef.current).forEach(k=>{if(k.startsWith(`${selTable}_`))delete alertedTablesRef.current[k];});
+      if(snap.folioId) closeFolio(snap.folioId,o.id,total);
+      // Limpiar alertas de la mesa
+      Object.keys(alertedTablesRef.current).forEach(k=>{if(k.startsWith(`${tId}_`))delete alertedTablesRef.current[k];});
       setDiscount(null);
       setClosed(p=>[o,...p]);
+      const at=Date.now();
+      setPaidFlash(p=>({...p,[tId]:{total,method,at,folioNum:snap.folioNum}}));
+      setTimeout(()=>setPaidFlash(p=>{if(p[tId]?.at!==at)return p;const n={...p};delete n[tId];return n;}),12000);
       setModal("success");setMdata({order:o});
+      // 3) Borrar la cuenta abierta del servidor (con reintentos en segundo plano).
+      removeOpenOrder(tId);
     }catch(err){
-      setOrders(p=>({...p,[selTable]:cur}));
-      alert("Error al procesar el pago. Intenta de nuevo.");
-      delete lastPayRef.current[selTable];
+      alert("No se pudo guardar el cobro. La cuenta sigue abierta: revisa la conexión e intenta de nuevo.");
+      delete lastPayRef.current[tId];
     }finally{setIsPaying(false);}
   };
 
@@ -1533,7 +1578,7 @@ export default function App() {
                     const pct=occ&&o?.seatedAt?Math.min((Date.now()-new Date(o.seatedAt).getTime())/TABLE_UPSELL_ALERT_MS,1):0;
                     return(
                       <div key={t.id}
-                        className={`table-card ${!occ?"empty":"occupied"} ${status?`alert-${status.level}`:""}`}
+                        className={`table-card ${!occ?"empty":"occupied"} ${!occ&&paidFlash[t.id]?"paid":""} ${status?`alert-${status.level}`:""}`}
                         style={status?{borderColor:status.color}:{}}
                         onClick={()=>{setSelTable(t.id);setPosView("order");}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1549,7 +1594,12 @@ export default function App() {
                             <div className="tc-bar" style={{width:`${pct*100}%`,background:status?.color||"var(--ac2)"}}/>
                           </>
                         ):(
-                          <span style={{fontSize:11,color:"var(--mu)"}}>Vacía — toca para abrir</span>
+                          paidFlash[t.id]?(
+                            <>
+                              <span className="paid-tag">✅ COBRADA</span>
+                              <span className="tc-total" style={{color:"var(--paid)"}}>{fmt(paidFlash[t.id].total)} · {paidFlash[t.id].method==="cash"?"efectivo":paidFlash[t.id].method==="card"?"tarjeta":"mixto"}</span>
+                            </>
+                          ):<span style={{fontSize:11,color:"var(--mu)"}}>Vacía — toca para abrir</span>
                         )}
                       </div>
                     );
@@ -1566,14 +1616,14 @@ export default function App() {
                     const o=orders[t.id];const items=o?.items||[];const occ=items.length>0;
                     const status=occ?getTableStatus(o?.seatedAt,o?.lastOrderAt):null;
                     return(
-                      <button key={t.id} className={`tbtn2 ${selTable===t.id?"on":""} ${occ?"occ":""} ${status?`alert-${status.level}`:""}`}
+                      <button key={t.id} className={`tbtn2 ${selTable===t.id?"on":""} ${occ?"occ":""} ${!occ&&paidFlash[t.id]?"paid":""} ${status?`alert-${status.level}`:""}`}
                         style={status?{borderColor:status.color}:{}}
                         onClick={()=>setSelTable(t.id)}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                           <span className="tname">{t.name}</span>
                           {occ&&<span style={{fontSize:9,fontFamily:"DM Mono",color:"var(--mu)"}}>{formatElapsed(o?.seatedAt)}</span>}
                         </div>
-                        <span className="tsub2">{occ?`${items.reduce((s,i)=>s+i.qty,0)} · ${fmt(items.reduce((s,i)=>s+i.price*i.qty,0))}`:"vacía"}</span>
+                        <span className="tsub2">{occ?`${items.reduce((s,i)=>s+i.qty,0)} · ${fmt(items.reduce((s,i)=>s+i.price*i.qty,0))}`:(paidFlash[t.id]?`✅ cobrada ${fmt(paidFlash[t.id].total)}`:"vacía")}</span>
                         {occ&&<div className="timer-bar" style={{width:`${Math.min((Date.now()-new Date(o?.seatedAt||Date.now()).getTime())/TABLE_UPSELL_ALERT_MS,1)*100}%`,background:status?.color||"var(--ac2)"}}/>}
                       </button>
                     );
@@ -1722,11 +1772,13 @@ export default function App() {
                     <span className={`mode-badge ${cur.mode==="salon"?"salon":"takeout"}`}>
                       {cur.mode==="salon"?"🪑 Salón":"🛍 Para llevar"}
                     </span>
-                    <button className="oclr" onClick={()=>clearOrder(selTable)}>Limpiar</button>
+                    {cur.items&&cur.items.length>0&&<button className="oclr" onClick={()=>clearOrder(selTable)}>Limpiar</button>}
                   </div>
                   <div className="oitems">
                     {(!cur.items||cur.items.length===0)?(
-                      <div className="oempty"><div className="oeicon">☕</div><div className="oetext">sin pedido</div></div>
+                      paidFlash[selTable]?(
+                        <div className="paid-banner"><div className="pb-icon">✅</div><div className="pb-title">CUENTA COBRADA</div><div className="pb-total">{fmt(paidFlash[selTable].total)}</div><div className="pb-sub">{paidFlash[selTable].method==="cash"?"Efectivo":paidFlash[selTable].method==="card"?"Tarjeta":"Pago mixto"} · la cuenta ya se cerró</div></div>
+                      ):<div className="oempty"><div className="oeicon">☕</div><div className="oetext">sin pedido</div></div>
                     ):(
                       <>
                         {tipAlert&&<div className="ubanner"><span style={{flex:1}}>{tipAlert}</span><button onClick={()=>setTipD(true)}>×</button></div>}
@@ -1848,7 +1900,7 @@ export default function App() {
                       const o=orders[t.id];const items=o?.items||[];const occ=items.length>0;
                       const status=occ?getTableStatus(o?.seatedAt,o?.lastOrderAt):null;
                       return(
-                        <button key={t.id} className={`wiz-table-card ${occ?"occ":""} ${status?`alert-${status.level}`:""}`}
+                        <button key={t.id} className={`wiz-table-card ${occ?"occ":""} ${!occ&&paidFlash[t.id]?"paid":""} ${status?`alert-${status.level}`:""}`}
                           style={status?{borderColor:status.color}:{}}
                           onClick={()=>{
                             setSelTable(t.id);
@@ -1859,7 +1911,7 @@ export default function App() {
                           {occ?(
                             <span className="wtc-sub">{items.reduce((s,i)=>s+i.qty,0)} items · {fmt(items.reduce((s,i)=>s+i.price*i.qty,0))}</span>
                           ):(
-                            <span className="wtc-sub empty">vacía</span>
+                            paidFlash[t.id]?<span className="wtc-sub" style={{color:"var(--paid)",fontWeight:700}}>✅ COBRADA {fmt(paidFlash[t.id].total)}</span>:<span className="wtc-sub empty">vacía</span>
                           )}
                         </button>
                       );
@@ -1927,11 +1979,13 @@ export default function App() {
                       <span className={`mode-badge ${cur.mode==="salon"?"salon":"takeout"}`}>
                         {cur.mode==="salon"?"🪑 Salón":"🛍 Para llevar"}
                       </span>
-                      <button className="oclr" onClick={()=>clearOrder(selTable)}>Limpiar</button>
+                      {cur.items&&cur.items.length>0&&<button className="oclr" onClick={()=>clearOrder(selTable)}>Limpiar</button>}
                     </div>
                     <div className="oitems">
                       {(!cur.items||cur.items.length===0)?(
-                        <div className="oempty"><div className="oeicon">☕</div><div className="oetext">sin pedido</div></div>
+                        paidFlash[selTable]?(
+                        <div className="paid-banner"><div className="pb-icon">✅</div><div className="pb-title">CUENTA COBRADA</div><div className="pb-total">{fmt(paidFlash[selTable].total)}</div><div className="pb-sub">{paidFlash[selTable].method==="cash"?"Efectivo":paidFlash[selTable].method==="card"?"Tarjeta":"Pago mixto"} · la cuenta ya se cerró</div></div>
+                      ):<div className="oempty"><div className="oeicon">☕</div><div className="oetext">sin pedido</div></div>
                       ):(
                         <>
                           {tipAlert&&<div className="ubanner"><span style={{flex:1}}>{tipAlert}</span><button onClick={()=>setTipD(true)}>×</button></div>}
@@ -2604,7 +2658,7 @@ export default function App() {
           <div className="mod" onClick={e=>e.stopPropagation()} style={{alignItems:"center",textAlign:"center"}}>
             <div className="mdrag"/>
             <div className="sanim">✅</div>
-            <h2>¡Cuenta cerrada!</h2>
+            <h2 style={{color:"var(--paid)"}}>COBRADA</h2>
             <p className="msub">Mesa {mdata.order?.table_num} · {fmt(mdata.order?.subtotal||0)}</p>
             {mdata.order?.discount_label&&<div className="mrow2"><span className="mlbl">Descuento</span><span className="mval" style={{color:"var(--warn)"}}>{mdata.order.discount_label}</span></div>}
             <div className="mrow2"><span className="mlbl">Método</span><span className="mval">{mdata.order?.method}</span></div>
