@@ -400,7 +400,7 @@ function getTableStatus(seatedAt, lastOrderAt){
   const lastOrder = lastOrderAt ? new Date(lastOrderAt).getTime() : seated;
   const sinceSeated = now - seated;
   const sinceOrder  = now - lastOrder;
-  if(sinceSeated < TABLE_DRINK_ALERT_MS) return {level:"ok",    color:"var(--ac2)", msg:null};
+  if(sinceSeated < TABLE_DRINK_ALERT_MS) return {level:"ok",    color:"var(--ac)",  msg:null};
   if(sinceSeated < TABLE_CHECK_ALERT_MS) return {level:"drinks",color:"var(--ac)",  msg:"☕ ¿Ya les llevaron bebidas?"};
   if(sinceOrder  < TABLE_UPSELL_ALERT_MS)return {level:"check", color:"var(--warn)",msg:"👀 Revisa la mesa"};
   return {level:"upsell",color:"var(--err)",msg:"🚀 ¡30 min! Ofrece postre, café extra o para llevar"};
@@ -504,7 +504,7 @@ input,select,textarea{font-family:inherit;}
 /* TABLE BUTTONS */
 .tbtn2{flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px 9px;text-align:left;display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden;}
 .tbtn2.on{border-color:var(--ac);background:#1c1a10;}
-.tbtn2.occ::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--ac2);position:absolute;top:7px;right:7px;}
+.tbtn2.occ::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--ac);position:absolute;top:7px;right:7px;}
 .tbtn2.alert-drinks{border-color:var(--ac)!important;animation:none;}
 .tbtn2.alert-check{border-color:var(--warn)!important;}
 .tbtn2.alert-upsell{border-color:var(--err)!important;animation:flash 1s infinite;}
@@ -543,6 +543,14 @@ input,select,textarea{font-family:inherit;}
 .table-card.paid .paid-tag{font-weight:800;font-size:14px;color:var(--paid);letter-spacing:.06em;}
 .paid-banner{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:6px;background:#10281a;border:2px solid var(--paid);border-radius:14px;margin:8px;padding:24px 12px;text-align:center;}
 .pb-icon{font-size:40px;}.pb-title{font-size:15px;font-weight:800;letter-spacing:.12em;color:var(--paid);}
+.paid-banner{animation:pbpop .35s ease;}@keyframes pbpop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+.pb-items{width:100%;max-width:250px;display:flex;flex-direction:column;}
+.pb-item{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:#7fbf95;text-decoration:line-through;overflow:hidden;animation:pbout 4s ease forwards;}
+@keyframes pbout{0%{opacity:1;max-height:24px}55%{opacity:.85;max-height:24px}100%{opacity:0;max-height:0}}
+.pb-bar{width:70%;height:4px;background:#1d4a2e;border-radius:2px;overflow:hidden;margin-top:10px;}
+.pb-bar span{display:block;height:100%;background:var(--paid);animation:pbbar 12s linear forwards;}
+@keyframes pbbar{from{width:100%}to{width:0}}
+.pb-hint{font-size:10px;color:#6fa883;letter-spacing:.06em;}
 .pb-total{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:#e8f5ec;}.pb-sub{font-size:11px;color:#9fd1b0;}
 .table-card.alert-drinks{border-color:var(--ac);}
 .table-card.alert-check{border-color:var(--warn);}
@@ -1300,7 +1308,7 @@ export default function App() {
       setDiscount(null);
       setClosed(p=>[o,...p]);
       const at=Date.now();
-      setPaidFlash(p=>({...p,[tId]:{total,method,at,folioNum:snap.folioNum}}));
+      setPaidFlash(p=>({...p,[tId]:{total,method,at,folioNum:snap.folioNum,items:snap.items}}));
       setTimeout(()=>setPaidFlash(p=>{if(p[tId]?.at!==at)return p;const n={...p};delete n[tId];return n;}),12000);
       setModal("success");setMdata({order:o});
       // 3) Borrar la cuenta abierta del servidor (con reintentos en segundo plano).
@@ -1777,7 +1785,7 @@ export default function App() {
                   <div className="oitems">
                     {(!cur.items||cur.items.length===0)?(
                       paidFlash[selTable]?(
-                        <div className="paid-banner"><div className="pb-icon">✅</div><div className="pb-title">CUENTA COBRADA</div><div className="pb-total">{fmt(paidFlash[selTable].total)}</div><div className="pb-sub">{paidFlash[selTable].method==="cash"?"Efectivo":paidFlash[selTable].method==="card"?"Tarjeta":"Pago mixto"} · la cuenta ya se cerró</div></div>
+                        <div className="paid-banner"><div className="pb-icon">✅</div><div className="pb-title">CUENTA COBRADA</div><div className="pb-total">{fmt(paidFlash[selTable].total)}</div><div className="pb-items">{(paidFlash[selTable].items||[]).map(i=><div key={i.lineId} className="pb-item"><span>✓ {i.qty}× {i.name}</span><span>{fmt(i.price*i.qty)}</span></div>)}</div><div className="pb-sub">{paidFlash[selTable].method==="cash"?"Efectivo":paidFlash[selTable].method==="card"?"Tarjeta":"Pago mixto"} · la cuenta ya se cerró y se borró</div><div className="pb-bar"><span/></div><div className="pb-hint">Mesa lista para una cuenta nueva</div></div>
                       ):<div className="oempty"><div className="oeicon">☕</div><div className="oetext">sin pedido</div></div>
                     ):(
                       <>
@@ -1984,7 +1992,7 @@ export default function App() {
                     <div className="oitems">
                       {(!cur.items||cur.items.length===0)?(
                         paidFlash[selTable]?(
-                        <div className="paid-banner"><div className="pb-icon">✅</div><div className="pb-title">CUENTA COBRADA</div><div className="pb-total">{fmt(paidFlash[selTable].total)}</div><div className="pb-sub">{paidFlash[selTable].method==="cash"?"Efectivo":paidFlash[selTable].method==="card"?"Tarjeta":"Pago mixto"} · la cuenta ya se cerró</div></div>
+                        <div className="paid-banner"><div className="pb-icon">✅</div><div className="pb-title">CUENTA COBRADA</div><div className="pb-total">{fmt(paidFlash[selTable].total)}</div><div className="pb-items">{(paidFlash[selTable].items||[]).map(i=><div key={i.lineId} className="pb-item"><span>✓ {i.qty}× {i.name}</span><span>{fmt(i.price*i.qty)}</span></div>)}</div><div className="pb-sub">{paidFlash[selTable].method==="cash"?"Efectivo":paidFlash[selTable].method==="card"?"Tarjeta":"Pago mixto"} · la cuenta ya se cerró y se borró</div><div className="pb-bar"><span/></div><div className="pb-hint">Mesa lista para una cuenta nueva</div></div>
                       ):<div className="oempty"><div className="oeicon">☕</div><div className="oetext">sin pedido</div></div>
                       ):(
                         <>
