@@ -69,6 +69,7 @@ const STORE_EMPLOYEES = {
     {id:501,name:"Monserrath",pin:"5010",role:"gerente"},
     {id:502,name:"Zoé",       pin:"5020",role:"mesero"},
     {id:503,name:"Violeta",   pin:"5030",role:"mesero"},
+    {id:504,name:"Regina",    pin:"5040",role:"mesero"},
   ],
   "jardin":[
     {id:606,name:"Magali Cortés",   pin:"6061",role:"mesero"},
