@@ -229,6 +229,11 @@ const MENU = {
   ],
 };
 
+// Modificador "Frío": las bebidas de Café y Sin café que por defecto se sirven calientes
+// pueden pedirse frías con un extra (se elige en la ventana de opciones, como la leche).
+const COLD_EXTRA = 10;
+["CAFÉ","SIN CAFÉ"].forEach(cat=>MENU[cat].forEach(i=>{ if(i.station==="barra"&&i.isCold===false) i.canCold=true; }));
+
 const EMP_DRINKS=[
   {id:"ec1",name:"Latte",    medPrice:71,grPrice:80, hasMilk:true},
   {id:"ec2",name:"Espresso", medPrice:35,grPrice:45, hasMilk:false},
@@ -1252,7 +1257,7 @@ export default function App() {
     setTipD(false);
     setPaidFlash(p=>{if(!p[selTable])return p;const n={...p};delete n[selTable];return n;});
     const c=orders[selTable]||EMPTY;const items=c.items||[];
-    const idx=items.findIndex(i=>i.id===item.id&&i.size===item.size&&i.milk===item.milk&&JSON.stringify(i.extras)===JSON.stringify(item.extras));
+    const idx=items.findIndex(i=>i.id===item.id&&i.size===item.size&&i.milk===item.milk&&!!i.cold===!!item.cold&&JSON.stringify(i.extras)===JSON.stringify(item.extras));
     const ni=idx>=0?items.map((it,j)=>j===idx?{...it,qty:it.qty+1}:it):[...items,{...item,qty:1,lineId:`${item.id}_${Date.now()}`}];
     // Auto-seat table when first item added
     const isNewFolio=!c.seatedAt;
@@ -1268,7 +1273,7 @@ export default function App() {
 
   const handleMenuClick=(item)=>{
     if(!employee)return;
-    if(item.hasSizes||item.hasMilk||item.hasFoodExtras||item.hasCocktailExtras){setMdata({item});setModal("customize");}
+    if(item.hasSizes||item.hasMilk||item.hasFoodExtras||item.hasCocktailExtras||item.canCold){setMdata({item});setModal("customize");}
     else addItem({...item,price:item.price||item.medPrice,size:null,milk:null,extras:[]});
   };
 
@@ -1802,7 +1807,7 @@ export default function App() {
                             </div>
                             <div className="obody">
                               <span className="oiname">{item.name}{item.size?` (${item.size==="grande"?"G":"M"})`:""}</span>
-                              <span className="oimods">{[item.milk,...(item.extras||[]).map(e=>e.label)].filter(Boolean).join(" · ")}</span>
+                              <span className="oimods">{[item.cold&&"🧊 Frío",item.milk,...(item.extras||[]).map(e=>e.label)].filter(Boolean).join(" · ")}</span>
                             </div>
                             <span className="oiprice">{fmt(item.price*item.qty)}</span>
                             <button className="odel" onClick={()=>removeItem(item.lineId)}>×</button>
@@ -2008,7 +2013,7 @@ export default function App() {
                               </div>
                               <div className="obody">
                                 <span className="oiname">{item.name}{item.size?` (${item.size==="grande"?"G":"M"})`:""}</span>
-                                <span className="oimods">{[item.milk,...(item.extras||[]).map(e=>e.label)].filter(Boolean).join(" · ")}</span>
+                                <span className="oimods">{[item.cold&&"🧊 Frío",item.milk,...(item.extras||[]).map(e=>e.label)].filter(Boolean).join(" · ")}</span>
                               </div>
                               <span className="oiprice">{fmt(item.price*item.qty)}</span>
                               <button className="odel" onClick={()=>removeItem(item.lineId)}>×</button>
@@ -2644,7 +2649,7 @@ export default function App() {
                   {its.map(i=>(
                     <div key={i.lineId}>
                       <div className="cline"><span className="cqty">{i.qty}×</span><span>{i.name}{i.size?` (${i.size==="grande"?"Grande":"Med."})`:""}</span></div>
-                      {(i.milk||(i.extras&&i.extras.length>0))&&<div className="cmod">{[i.milk&&`Leche ${i.milk}`,...(i.extras||[]).map(e=>e.label)].filter(Boolean).join(" · ")}</div>}
+                      {(i.cold||i.milk||(i.extras&&i.extras.length>0))&&<div className="cmod">{[i.cold&&"FRÍO",i.milk&&`Leche ${i.milk}`,...(i.extras||[]).map(e=>e.label)].filter(Boolean).join(" · ")}</div>}
                     </div>
                   ))}
                   {cur.note&&<div style={{borderTop:"1px dashed #ccc",marginTop:8,paddingTop:7,fontSize:11,color:"#666"}}>Nota: {cur.note}</div>}
@@ -2827,7 +2832,7 @@ export default function App() {
     const mode=cur.mode==="takeout"?"PARA LLEVAR":"SALON";
     const now=new Date().toLocaleTimeString("es-MX",{timeZone:TZ,hour:"2-digit",minute:"2-digit"});
     const date=new Date().toLocaleDateString("es-MX",{timeZone:TZ,day:"2-digit",month:"2-digit",year:"numeric"});
-    const formatItems=(its)=>its.map(i=>{let line=`${i.qty}x ${i.name}`;if(i.size)line+=` (${i.size==="grande"?"Grande":"Med."})`;let mods=[i.milk&&`Leche ${i.milk}`,...(i.extras||[]).map(e=>e.label)].filter(Boolean);if(mods.length)line+=`\n   -> ${mods.join(", ")}`;if(type==="ticket")line+=`  $${(i.price*i.qty).toFixed(0)}`;return line;}).join("\n");
+    const formatItems=(its)=>its.map(i=>{let line=`${i.qty}x ${i.name}`;if(i.size)line+=` (${i.size==="grande"?"Grande":"Med."})`;let mods=[i.cold&&"FRÍO",i.milk&&`Leche ${i.milk}`,...(i.extras||[]).map(e=>e.label)].filter(Boolean);if(mods.length)line+=`\n   -> ${mods.join(", ")}`;if(type==="ticket")line+=`  $${(i.price*i.qty).toFixed(0)}`;return line;}).join("\n");
     let content="";
     if(type==="comanda"){
       if(barraItems.length){content+=`================================\n   CHE CHE CAFE - ${storeObj?.short||""} - BARRA\n================================\nMesa ${selTable}  ${mode}  ${now}\n--------------------------------\n${formatItems(barraItems)}\n`;if(cur.note)content+=`--------------------------------\nNota: ${cur.note}\n`;content+=`================================\n\n`;}
@@ -2844,10 +2849,10 @@ export default function App() {
 
 // ── COMPONENTS ────────────────────────────────────────────
 function CustomizeModal({item,onAdd,onClose}){
-  const [size,setSize]=useState(null);const [milk,setMilk]=useState(item.hasMilk?"entera":null);const [extras,setExtras]=useState([]);
+  const [size,setSize]=useState(null);const [milk,setMilk]=useState(item.hasMilk?"entera":null);const [extras,setExtras]=useState([]);const [cold,setCold]=useState(false);
   const milkExtra=(MILK_OPTIONS.find(m=>m.id===milk)?.extra)||0;const extrasSum=extras.reduce((s,e)=>s+e.price,0);
   const basePrice=size==="grande"?(item.grPrice||item.medPrice||0):size==="mediano"?(item.medPrice||item.price||0):(item.price||item.medPrice||0);
-  const finalPrice=basePrice+milkExtra+extrasSum;const canAdd=!item.hasSizes||size!==null;
+  const finalPrice=basePrice+milkExtra+extrasSum+(cold?COLD_EXTRA:0);const canAdd=!item.hasSizes||size!==null;
   const toggle=ex=>setExtras(p=>p.find(e=>e.id===ex.id)?p.filter(e=>e.id!==ex.id):[...p,ex]);
   return(
     <div className="ov" onClick={onClose}>
@@ -2856,11 +2861,12 @@ function CustomizeModal({item,onAdd,onClose}){
         <h2>{item.name}</h2>
         {item.note&&<p className="msub">{item.note}</p>}
         {item.hasSizes&&<><span className="ssep">Tamaño</span><div className="ogrid"><button className={`obtn ${size==="mediano"?"sel":""}`} onClick={()=>setSize("mediano")}><span className="oblbl">☕ Mediano</span><span className="obprice">{fmt(item.medPrice||item.price)}</span></button><button className={`obtn ${size==="grande"?"sel":""}`} onClick={()=>setSize("grande")}><span className="oblbl">🥤 Grande</span><span className="obprice">{fmt(item.grPrice||item.medPrice)}</span></button></div></>}
+        {item.canCold&&<><span className="ssep">Temperatura</span><div style={{display:"flex",flexDirection:"column",gap:5}}><div className={`ckrow ${!cold?"sel":""}`} onClick={()=>setCold(false)}><div className="ckbox">{!cold?"✓":""}</div><span className="cklbl">🔥 Caliente</span><span className="ckprice">incluido</span></div><div className={`ckrow ${cold?"sel":""}`} onClick={()=>setCold(true)}><div className="ckbox">{cold?"✓":""}</div><span className="cklbl">🧊 Frío</span><span className="ckprice">+{fmt(COLD_EXTRA)}</span></div></div></>}
         {item.hasMilk&&<><span className="ssep">Leche</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{MILK_OPTIONS.map(m=><div key={m.id} className={`ckrow ${milk===m.id?"sel":""}`} onClick={()=>setMilk(m.id)}><div className="ckbox">{milk===m.id?"✓":""}</div><span className="cklbl">{m.label}</span><span className="ckprice">{m.extra>0?`+${fmt(m.extra)}`:"incluida"}</span></div>)}</div></>}
         {item.hasFoodExtras&&<><span className="ssep">Extras</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{FOOD_EXTRAS.map(ex=>{const sel=extras.find(e=>e.id===ex.id);return<div key={ex.id} className={`ckrow ${sel?"sel":""}`} onClick={()=>toggle(ex)}><div className="ckbox">{sel?"✓":""}</div><span className="cklbl">{ex.label}</span><span className="ckprice">+{fmt(ex.price)}</span></div>;})}</div></>}
         {item.hasCocktailExtras&&<><span className="ssep">Extras</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{COCKTAIL_EXTRAS.map(ex=>{const sel=extras.find(e=>e.id===ex.id);return<div key={ex.id} className={`ckrow ${sel?"sel":""}`} onClick={()=>toggle(ex)}><div className="ckbox">{sel?"✓":""}</div><span className="cklbl">{ex.label}</span><span className="ckprice">+{fmt(ex.price)}</span></div>;})}</div></>}
         <div className="mrow2"><span className="mlbl">Total</span><span className="mval big">{fmt(finalPrice)}</span></div>
-        <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" onClick={()=>onAdd({...item,price:finalPrice,size,milk:milk&&milk!=="entera"?MILK_OPTIONS.find(m=>m.id===milk)?.label:null,extras})} disabled={!canAdd}>{canAdd?`Agregar ${fmt(finalPrice)}`:"Elige tamaño"}</button></div>
+        <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" onClick={()=>onAdd({...item,price:finalPrice,isCold:cold||item.isCold,cold,size,milk:milk&&milk!=="entera"?MILK_OPTIONS.find(m=>m.id===milk)?.label:null,extras})} disabled={!canAdd}>{canAdd?`Agregar ${fmt(finalPrice)}`:"Elige tamaño"}</button></div>
       </div>
     </div>
   );
