@@ -957,7 +957,7 @@ export default function App() {
   const [attendance, setAttendance] = useState({});
   const [corteShift, setCorteShift] = useState("A");
   const [pendingExpenses, setPendingExpenses] = useState([]);
-  const [discount, setDiscount] = useState(null);
+  const [discountState, setDiscount] = useState(null);
   const [isPaying, setIsPaying] = useState(false);
   const [paidFlash, setPaidFlash] = useState({}); // mesas recién cobradas: se ven en verde unos segundos
   const [tableConfig, setTableConfig] = useState({}); // {storeId: [{id,name,capacity,x,y,shape}]}
@@ -1179,6 +1179,9 @@ export default function App() {
 
   const EMPTY={items:[],comensales:1,note:"",mode:"salon"};
   const cur = orders[selTable]||EMPTY;
+  // Las promociones NO se combinan con descuentos: si la cuenta lleva una promo, no se aplica ningún descuento.
+  const hasPromo = (cur.items||[]).some(i=>i.promo);
+  const discount = hasPromo?null:discountState;
   const subtotalBeforeDisc=(cur.items||[]).reduce((s,i)=>s+i.price*i.qty,0);
   const discAmount=discount?(discount.amount!=null?Math.min(Math.round(discount.amount),subtotalBeforeDisc):Math.round(subtotalBeforeDisc*discount.pct)):0;
   const discLabel=discount?`${discount.label}${discount.by?` · por ${discount.by}`:""}`:null;
@@ -1273,6 +1276,7 @@ export default function App() {
   };
 
   const addItem=(item)=>{
+    if(item.promo&&discountState){alert("🏷️ Las promociones no se combinan con descuentos. Quita el descuento para agregar la promoción.");return;}
     setTipD(false);
     setPaidFlash(p=>{if(!p[selTable])return p;const n={...p};delete n[selTable];return n;});
     const c=orders[selTable]||EMPTY;const items=c.items||[];
@@ -1840,9 +1844,10 @@ export default function App() {
                   </div>
                   <div className="ofoot">
                     <div className="trow"><span>Subtotal</span><span>{fmt(subtotalBeforeDisc)}</span></div>
+                    {hasPromo&&<div className="promo-off" style={{margin:"0 0 6px"}}>🏷️ Las promociones no se combinan con descuentos.</div>}
                     <div className="disc-toggle">
                       {DISCOUNTS.filter(d=>!d.adminOnly||canManualDiscount).map(d=>(
-                        <button key={d.id} className={`disc-btn ${discount?.id===d.id?"on":""}`}
+                        <button key={d.id} disabled={hasPromo} className={`disc-btn ${discount?.id===d.id?"on":""}`}
                           onClick={()=>{
                             if(d.id==="custom"){setModal("manual_disc");setMdata({});}
                             else setDiscount(discount?.id===d.id?null:{...d,by:employee.name});
@@ -2048,9 +2053,10 @@ export default function App() {
                     <div className="ofoot">
                       <button className="wiz-add-more-btn" onClick={()=>setMobStep("category")}>+ Agregar más productos</button>
                       <div className="trow"><span>Subtotal</span><span>{fmt(subtotalBeforeDisc)}</span></div>
-                      <div className="disc-toggle">
+                      {hasPromo&&<div className="promo-off" style={{margin:"0 0 6px"}}>🏷️ Las promociones no se combinan con descuentos.</div>}
+                    <div className="disc-toggle">
                         {DISCOUNTS.filter(d=>!d.adminOnly||canManualDiscount).map(d=>(
-                          <button key={d.id} className={`disc-btn ${discount?.id===d.id?"on":""}`}
+                          <button key={d.id} disabled={hasPromo} className={`disc-btn ${discount?.id===d.id?"on":""}`}
                             onClick={()=>{
                               if(d.id==="custom"){setModal("manual_disc");setMdata({});}
                               else setDiscount(discount?.id===d.id?null:{...d,by:employee.name});
