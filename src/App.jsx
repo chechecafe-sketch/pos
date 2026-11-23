@@ -136,7 +136,7 @@ const DISPOSABLE_PROFILES = {
   hot_16oz:{"Vaso 16oz caliente":1,"Tapa 12-16oz caliente":1},
   cold_16oz:{"Vaso cristal 16oz":1,"Tapa boquilla 16oz":1},
 };
-const ESPRESSO_SHOTS={c1:1,c2:2,c3:2,c4:2,c5:2,c6:2,c7:2,c8:2,c9:1,c10:1,c11:1,c12:2,c13:2};
+const ESPRESSO_SHOTS={c1:1,c2:2,c3:2,c4:2,c5:2,c6:2,c7:2,c8:2,c9:1,c10:1,c11:1,c12:2,c13:2,pr2:2};
 const MILK_L = 0.22;
 
 const MENU = {
@@ -227,12 +227,24 @@ const MENU = {
     {id:"k15",name:"Chocolate Evento",  price:71,station:"barra",hasMilk:true, isCold:false,note:"Precio especial evento"},
     {id:"k16",name:"Flat White Evento", price:71,station:"barra",hasMilk:true, isCold:false,isFlatWhite:true,note:"Precio especial evento"},
   ],
+  "PROMOCIONES":[
+    {id:"pr1",name:"Café del Día",   price:26,station:"barra",hasMilk:false,isCold:false,promo:true,note:"Lun a Jue"},
+    {id:"pr2",name:"Café de la casa",price:44,station:"barra",hasMilk:true, isCold:false,promo:true,note:"Capuchino, Latte o Flat White · Lun a Jue",
+      variants:[{id:"capuchino",label:"Capuchino"},{id:"latte",label:"Latte"},{id:"flat",label:"Flat White"}]},
+  ],
 };
+
+// Promociones: solo en las tiendas indicadas y de lunes a jueves (hora de CDMX).
+const PROMO_STORES=["del-valle"];
+const PROMO_DAYS=["Mon","Tue","Wed","Thu"];
+const promoActive=(d=new Date())=>PROMO_DAYS.includes(new Intl.DateTimeFormat("en-US",{timeZone:"America/Mexico_City",weekday:"short"}).format(d));
+// Descuento manual para baristas (los gerentes/admin ya lo tenían): solo en estas tiendas.
+const MANUAL_DISCOUNT_STORES=["del-valle"];
 
 // Modificador "Frío": las bebidas de Café y Sin café que por defecto se sirven calientes
 // pueden pedirse frías con un extra (se elige en la ventana de opciones, como la leche).
 const COLD_EXTRA = 10;
-["CAFÉ","SIN CAFÉ"].forEach(cat=>MENU[cat].forEach(i=>{ if(i.station==="barra"&&i.isCold===false) i.canCold=true; }));
+["CAFÉ","SIN CAFÉ","PROMOCIONES"].forEach(cat=>MENU[cat].forEach(i=>{ if(i.station==="barra"&&i.isCold===false) i.canCold=true; }));
 
 const EMP_DRINKS=[
   {id:"ec1",name:"Latte",    medPrice:71,grPrice:80, hasMilk:true},
@@ -557,6 +569,9 @@ input,select,textarea{font-family:inherit;}
 .pb-bar span{display:block;height:100%;background:var(--paid);animation:pbbar 12s linear forwards;}
 @keyframes pbbar{from{width:100%}to{width:0}}
 .pb-hint{font-size:10px;color:#6fa883;letter-spacing:.06em;}
+.ctab.off{opacity:.45;}
+.promo-off{margin:8px 12px 0;padding:10px 14px;border-radius:10px;background:#2a1d10;border:1px solid var(--warn);color:#f0c89a;font-size:13px;}
+.mcard.promo-off-card{opacity:.4;cursor:not-allowed;}
 .pb-total{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;color:#e8f5ec;}.pb-sub{font-size:11px;color:#9fd1b0;}
 .table-card.alert-drinks{border-color:var(--ac);}
 .table-card.alert-check{border-color:var(--warn);}
@@ -966,6 +981,9 @@ export default function App() {
   const storeObj = store ? STORES.find(s=>s.id===store) : null;
   const isSuperAdmin = employee?.role === "superadmin";
   const isGerente    = employee?.role === "gerente" || isSuperAdmin;
+  const visibleCats  = Object.keys(MENU).filter(cat=>cat!=="PROMOCIONES"||PROMO_STORES.includes(store));
+  const promoOn      = promoActive();
+  const canManualDiscount = (employee?.role!=="mesero"&&employee?.role!=="cocina")||MANUAL_DISCOUNT_STORES.includes(store);
   const storeEmployees = store ? STORE_EMPLOYEES[store]||[] : [];
   const tableCount = storeObj?.tables || 10;
   const TABLES = (()=>{
@@ -1162,7 +1180,8 @@ export default function App() {
   const EMPTY={items:[],comensales:1,note:"",mode:"salon"};
   const cur = orders[selTable]||EMPTY;
   const subtotalBeforeDisc=(cur.items||[]).reduce((s,i)=>s+i.price*i.qty,0);
-  const discAmount=discount?Math.round(subtotalBeforeDisc*discount.pct):0;
+  const discAmount=discount?(discount.amount!=null?Math.min(Math.round(discount.amount),subtotalBeforeDisc):Math.round(subtotalBeforeDisc*discount.pct)):0;
+  const discLabel=discount?`${discount.label}${discount.by?` · por ${discount.by}`:""}`:null;
   const total=subtotalBeforeDisc-discAmount;
   const tipAlert=!tipDismissed?getUpsell(cur.items):null;
 
@@ -1257,7 +1276,7 @@ export default function App() {
     setTipD(false);
     setPaidFlash(p=>{if(!p[selTable])return p;const n={...p};delete n[selTable];return n;});
     const c=orders[selTable]||EMPTY;const items=c.items||[];
-    const idx=items.findIndex(i=>i.id===item.id&&i.size===item.size&&i.milk===item.milk&&!!i.cold===!!item.cold&&JSON.stringify(i.extras)===JSON.stringify(item.extras));
+    const idx=items.findIndex(i=>i.id===item.id&&i.size===item.size&&i.milk===item.milk&&!!i.cold===!!item.cold&&(i.variant||null)===(item.variant||null)&&JSON.stringify(i.extras)===JSON.stringify(item.extras));
     const ni=idx>=0?items.map((it,j)=>j===idx?{...it,qty:it.qty+1}:it):[...items,{...item,qty:1,lineId:`${item.id}_${Date.now()}`}];
     // Auto-seat table when first item added
     const isNewFolio=!c.seatedAt;
@@ -1273,7 +1292,8 @@ export default function App() {
 
   const handleMenuClick=(item)=>{
     if(!employee)return;
-    if(item.hasSizes||item.hasMilk||item.hasFoodExtras||item.hasCocktailExtras||item.canCold){setMdata({item});setModal("customize");}
+    if(item.promo&&!promoActive()){alert("🏷️ Las promociones solo están disponibles de lunes a jueves.");return;}
+    if(item.hasSizes||item.hasMilk||item.hasFoodExtras||item.hasCocktailExtras||item.canCold||item.variants){setMdata({item});setModal("customize");}
     else addItem({...item,price:item.price||item.medPrice,size:null,milk:null,extras:[]});
   };
 
@@ -1297,7 +1317,7 @@ export default function App() {
     // Mismo id en cada intento: si hay que reintentar, la venta no se duplica (upsert por id).
     const orderId=payAttemptRef.current[tId]||(payAttemptRef.current[tId]=`ord_${Date.now()}`);
     try{
-      const o={id:orderId,table_num:tId,store_id:store,store_name:storeObj?.name||"",employee:employee.name,employee_id:employee.id,items:[...snap.items],comensales:snap.comensales,mode:snap.mode,subtotal:total,subtotal_before_disc:subtotalBeforeDisc,discount_label:discount?.label||null,discount_pct:discount?.pct||0,method,cash_amt:cashAmt||0,card_amt:cardAmt||0,tip:tipAmt||0,timestamp:nowISO()};
+      const o={id:orderId,table_num:tId,store_id:store,store_name:storeObj?.name||"",employee:employee.name,employee_id:employee.id,items:[...snap.items],comensales:snap.comensales,mode:snap.mode,subtotal:total,subtotal_before_disc:subtotalBeforeDisc,discount_label:discLabel||null,discount_pct:discount?(discount.amount!=null?(subtotalBeforeDisc?discAmount/subtotalBeforeDisc:0):discount.pct):0,method,cash_amt:cashAmt||0,card_amt:cardAmt||0,tip:tipAmt||0,timestamp:nowISO()};
       // 1) Guardar la venta y CONFIRMAR. Si falla, la cuenta sigue abierta y se puede reintentar.
       await sb.upsertStrict("closed_orders",o);
       // 2) Venta guardada = cuenta cobrada. Se quita del carrito y la mesa se marca COBRADA.
@@ -1750,12 +1770,13 @@ export default function App() {
                     </div>
                   )}
                   <div className="cscroll">
-                    {Object.keys(MENU).map(cat=>(
-                      <button key={cat} className={`ctab ${activeCat===cat?"on":""}`} onClick={()=>setCat(cat)}>{cat}</button>
+                    {visibleCats.map(cat=>(
+                      <button key={cat} className={`ctab ${activeCat===cat?"on":""} ${cat==="PROMOCIONES"&&!promoOn?"off":""}`} onClick={()=>setCat(cat)}>{cat==="PROMOCIONES"?"🏷️ PROMOCIONES":cat}</button>
                     ))}
                   </div>
+                  {activeCat==="PROMOCIONES"&&!promoOn&&<div className="promo-off">🏷️ Las promociones solo están disponibles de lunes a jueves. Hoy no están activas.</div>}
                   <div className="igrid">
-                    {MENU[activeCat].map(item=>{
+                    {MENU[visibleCats.includes(activeCat)?activeCat:"CAFÉ"].map(item=>{
                       const bp=item.medPrice||item.price;const tp=item.grPrice||item.medPrice||item.price;
                       if(item.isCombo) return(
                         <button key={item.id} className="mcard combo" onClick={()=>addItem({...item,price:item.price,size:null,milk:null,extras:[]})}>
@@ -1766,7 +1787,7 @@ export default function App() {
                         </button>
                       );
                       return(
-                        <button key={item.id} className="mcard" onClick={()=>handleMenuClick(item)}>
+                        <button key={item.id} className={`mcard ${item.promo&&!promoOn?"promo-off-card":""}`} disabled={!!item.promo&&!promoOn} onClick={()=>handleMenuClick(item)}>
                           <div className="mcrow"><span className="mcname">{item.name}</span>{item.fav&&<span className="mcfav">★</span>}</div>
                           <span className={`stag ${item.station}`}>{item.station}</span>
                           <span className="mcprice">{item.hasSizes?`${fmt(bp)} – ${fmt(tp)}`:fmt(bp)}</span>
@@ -1820,11 +1841,11 @@ export default function App() {
                   <div className="ofoot">
                     <div className="trow"><span>Subtotal</span><span>{fmt(subtotalBeforeDisc)}</span></div>
                     <div className="disc-toggle">
-                      {DISCOUNTS.filter(d=>!d.adminOnly||employee.role!=="mesero"&&employee.role!=="cocina").map(d=>(
+                      {DISCOUNTS.filter(d=>!d.adminOnly||canManualDiscount).map(d=>(
                         <button key={d.id} className={`disc-btn ${discount?.id===d.id?"on":""}`}
                           onClick={()=>{
-                            if(d.id==="custom"){const p=prompt("% de descuento:");if(p){const pct=parseFloat(p)/100;if(pct>0&&pct<=1)setDiscount({id:"custom",pct,label:`Descuento ${p}%`});}}
-                            else setDiscount(discount?.id===d.id?null:d);
+                            if(d.id==="custom"){setModal("manual_disc");setMdata({});}
+                            else setDiscount(discount?.id===d.id?null:{...d,by:employee.name});
                           }}>
                           <span style={{fontSize:14}}>{d.emoji}</span>
                           <span>{d.label}</span>
@@ -1834,7 +1855,7 @@ export default function App() {
                     </div>
                     {discount&&(
                       <div className="disc-row-active">
-                        <span>{discount.emoji} {discount.label}</span>
+                        <span>{discount.emoji} {discLabel}</span>
                         <div style={{display:"flex",alignItems:"center",gap:10}}>
                           <span style={{fontFamily:"DM Mono"}}>−{fmt(discAmount)}</span>
                           <button onClick={()=>setDiscount(null)} style={{background:"none",border:"none",color:"var(--warn)",fontSize:16,padding:0}}>×</button>
@@ -1939,8 +1960,8 @@ export default function App() {
                 <div className="wiz-body">
                   <div className="wiz-title">{cur.mode==="takeout"?"🛍 Para llevar":`Mesa ${selTable}`} — elige categoría</div>
                   <div className="wiz-cat-grid">
-                    {Object.keys(MENU).map(cat=>{
-                      const icon={"CAFÉ":"☕","SIN CAFÉ":"🧊","TODO EL DÍA":"🍽","DESAYUNOS":"🍳","LIGEROS":"🥗","PAN DULCE":"🥐","COMBOS":"🎁","COCTELERÍA":"🍹"}[cat]||"🍴";
+                    {visibleCats.map(cat=>{
+                      const icon={"CAFÉ":"☕","SIN CAFÉ":"🧊","TODO EL DÍA":"🍽","DESAYUNOS":"🍳","LIGEROS":"🥗","PAN DULCE":"🥐","COMBOS":"🎁","COCTELERÍA":"🍹","PROMOCIONES":"🏷️"}[cat]||"🍴";
                       return(
                         <button key={cat} className="wiz-cat-card" onClick={()=>{setCat(cat);setMobStep("items");}}>
                           <span className="wcc-icon">{icon}</span>
@@ -1956,8 +1977,9 @@ export default function App() {
               {mobStep==="items"&&(
                 <div className="wiz-body">
                   <div className="wiz-title">{activeCat}</div>
+                  {activeCat==="PROMOCIONES"&&!promoOn&&<div className="promo-off">🏷️ Las promociones solo están disponibles de lunes a jueves. Hoy no están activas.</div>}
                   <div className="igrid wiz-igrid">
-                    {MENU[activeCat].map(item=>{
+                    {MENU[visibleCats.includes(activeCat)?activeCat:"CAFÉ"].map(item=>{
                       const bp=item.medPrice||item.price;const tp=item.grPrice||item.medPrice||item.price;
                       if(item.isCombo)return(
                         <button key={item.id} className="mcard combo" onClick={()=>addItem({...item,price:item.price,size:null,milk:null,extras:[]})}>
@@ -1968,7 +1990,7 @@ export default function App() {
                         </button>
                       );
                       return(
-                        <button key={item.id} className="mcard" onClick={()=>handleMenuClick(item)}>
+                        <button key={item.id} className={`mcard ${item.promo&&!promoOn?"promo-off-card":""}`} disabled={!!item.promo&&!promoOn} onClick={()=>handleMenuClick(item)}>
                           <div className="mcrow"><span className="mcname">{item.name}</span>{item.fav&&<span className="mcfav">★</span>}</div>
                           <span className={`stag ${item.station}`}>{item.station}</span>
                           <span className="mcprice">{item.hasSizes?`${fmt(bp)} – ${fmt(tp)}`:fmt(bp)}</span>
@@ -2027,11 +2049,11 @@ export default function App() {
                       <button className="wiz-add-more-btn" onClick={()=>setMobStep("category")}>+ Agregar más productos</button>
                       <div className="trow"><span>Subtotal</span><span>{fmt(subtotalBeforeDisc)}</span></div>
                       <div className="disc-toggle">
-                        {DISCOUNTS.filter(d=>!d.adminOnly||employee.role!=="mesero"&&employee.role!=="cocina").map(d=>(
+                        {DISCOUNTS.filter(d=>!d.adminOnly||canManualDiscount).map(d=>(
                           <button key={d.id} className={`disc-btn ${discount?.id===d.id?"on":""}`}
                             onClick={()=>{
-                              if(d.id==="custom"){const p=prompt("% de descuento:");if(p){const pct=parseFloat(p)/100;if(pct>0&&pct<=1)setDiscount({id:"custom",pct,label:`Descuento ${p}%`});}}
-                              else setDiscount(discount?.id===d.id?null:d);
+                              if(d.id==="custom"){setModal("manual_disc");setMdata({});}
+                              else setDiscount(discount?.id===d.id?null:{...d,by:employee.name});
                             }}>
                             <span style={{fontSize:14}}>{d.emoji}</span>
                             <span>{d.label}</span>
@@ -2041,7 +2063,7 @@ export default function App() {
                       </div>
                       {discount&&(
                         <div className="disc-row-active">
-                          <span>{discount.emoji} {discount.label}</span>
+                          <span>{discount.emoji} {discLabel}</span>
                           <div style={{display:"flex",alignItems:"center",gap:10}}>
                             <span style={{fontFamily:"DM Mono"}}>−{fmt(discAmount)}</span>
                             <button onClick={()=>setDiscount(null)} style={{background:"none",border:"none",color:"var(--warn)",fontSize:16,padding:0}}>×</button>
@@ -2735,6 +2757,7 @@ export default function App() {
         </div>
       )}
 
+      {modal==="manual_disc"&&<ManualDiscountModal subtotal={subtotalBeforeDisc} employee={employee} onApply={d=>{setDiscount(d);setModal(null);}} onClose={()=>setModal(null)}/>}
       {modal==="cash_entry"&&<CashEntryModal employee={employee} onSave={async(type,amount,desc,photo)=>{await addCashEntry(type,amount,desc,photo);setModal(null);}} onClose={()=>setModal(null)}/>}
 
       {modal==="checkin"&&(
@@ -2808,7 +2831,7 @@ export default function App() {
       h:d.toLocaleTimeString("es-MX",{timeZone:TZ,hour:"2-digit",minute:"2-digit"}),
       m:selTable,md:cur.mode==="takeout"?"takeout":"dine",
       i:its.map(i=>[i.qty,`${i.name}${i.size?` (${i.size==="grande"?"Grande":"Med."})`:""}`,Math.round(i.price*i.qty)]),
-      x:discAmount,l:discount?.label||"",t:Math.round(total),
+      x:discAmount,l:discLabel||"",t:Math.round(total),
     }});
     setModal("vticket");
   }
@@ -2839,7 +2862,7 @@ export default function App() {
       if(cocinaItems.length){content+=`================================\n   CHE CHE CAFE - ${storeObj?.short||""} - COCINA\n================================\nMesa ${selTable}  ${mode}  ${now}\n--------------------------------\n${formatItems(cocinaItems)}\n`;if(cur.note)content+=`--------------------------------\nNota: ${cur.note}\n`;content+=`================================\n`;}
     }else{
       content+=`   ${storeObj?.name||""}\n================================\n${date}  ${now}\nMesa: ${selTable}  ${mode}\nAtendio: ${employee.name}\n--------------------------------\n${formatItems(items)}\n--------------------------------\n`;
-      if(discount)content+=`Descuento ${discount.label}: -$${discAmount.toFixed(0)}\n`;
+      if(discount)content+=`Descuento ${discLabel}: -$${discAmount.toFixed(0)}\n`;
       content+=`TOTAL: $${total.toFixed(0)}\n================================\n   ¡Gracias por su visita!\n================================\n\n¿Necesita factura?\nEnvíe sus datos fiscales y este\nticket a:\n${INVOICE_EMAIL}\n`;
     }
     const logoHtml=type==="ticket"?`<div style="text-align:center;white-space:normal;"><img src="${CHECHE_LOGO}" alt="Che Che Café" style="width:45mm;height:auto;filter:invert(1);"/></div>`:"";
@@ -2849,10 +2872,11 @@ export default function App() {
 
 // ── COMPONENTS ────────────────────────────────────────────
 function CustomizeModal({item,onAdd,onClose}){
-  const [size,setSize]=useState(null);const [milk,setMilk]=useState(item.hasMilk?"entera":null);const [extras,setExtras]=useState([]);const [cold,setCold]=useState(false);
+  const [size,setSize]=useState(null);const [milk,setMilk]=useState(item.hasMilk?"entera":null);const [extras,setExtras]=useState([]);const [cold,setCold]=useState(false);const [variant,setVariant]=useState(null);
+  const vObj=item.variants?.find(v=>v.id===variant);const vLabel=vObj?.label||null;
   const milkExtra=(MILK_OPTIONS.find(m=>m.id===milk)?.extra)||0;const extrasSum=extras.reduce((s,e)=>s+e.price,0);
   const basePrice=size==="grande"?(item.grPrice||item.medPrice||0):size==="mediano"?(item.medPrice||item.price||0):(item.price||item.medPrice||0);
-  const finalPrice=basePrice+milkExtra+extrasSum+(cold?COLD_EXTRA:0);const canAdd=!item.hasSizes||size!==null;
+  const finalPrice=basePrice+milkExtra+extrasSum+(cold?COLD_EXTRA:0);const canAdd=(!item.hasSizes||size!==null)&&(!item.variants||variant!==null);
   const toggle=ex=>setExtras(p=>p.find(e=>e.id===ex.id)?p.filter(e=>e.id!==ex.id):[...p,ex]);
   return(
     <div className="ov" onClick={onClose}>
@@ -2861,12 +2885,13 @@ function CustomizeModal({item,onAdd,onClose}){
         <h2>{item.name}</h2>
         {item.note&&<p className="msub">{item.note}</p>}
         {item.hasSizes&&<><span className="ssep">Tamaño</span><div className="ogrid"><button className={`obtn ${size==="mediano"?"sel":""}`} onClick={()=>setSize("mediano")}><span className="oblbl">☕ Mediano</span><span className="obprice">{fmt(item.medPrice||item.price)}</span></button><button className={`obtn ${size==="grande"?"sel":""}`} onClick={()=>setSize("grande")}><span className="oblbl">🥤 Grande</span><span className="obprice">{fmt(item.grPrice||item.medPrice)}</span></button></div></>}
+        {item.variants&&<><span className="ssep">Tipo de café</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{item.variants.map(v=><div key={v.id} className={`ckrow ${variant===v.id?"sel":""}`} onClick={()=>setVariant(v.id)}><div className="ckbox">{variant===v.id?"✓":""}</div><span className="cklbl">{v.label}</span><span className="ckprice">incluido</span></div>)}</div></>}
         {item.canCold&&<><span className="ssep">Temperatura</span><div style={{display:"flex",flexDirection:"column",gap:5}}><div className={`ckrow ${!cold?"sel":""}`} onClick={()=>setCold(false)}><div className="ckbox">{!cold?"✓":""}</div><span className="cklbl">🔥 Caliente</span><span className="ckprice">incluido</span></div><div className={`ckrow ${cold?"sel":""}`} onClick={()=>setCold(true)}><div className="ckbox">{cold?"✓":""}</div><span className="cklbl">🧊 Frío</span><span className="ckprice">+{fmt(COLD_EXTRA)}</span></div></div></>}
         {item.hasMilk&&<><span className="ssep">Leche</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{MILK_OPTIONS.map(m=><div key={m.id} className={`ckrow ${milk===m.id?"sel":""}`} onClick={()=>setMilk(m.id)}><div className="ckbox">{milk===m.id?"✓":""}</div><span className="cklbl">{m.label}</span><span className="ckprice">{m.extra>0?`+${fmt(m.extra)}`:"incluida"}</span></div>)}</div></>}
         {item.hasFoodExtras&&<><span className="ssep">Extras</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{FOOD_EXTRAS.map(ex=>{const sel=extras.find(e=>e.id===ex.id);return<div key={ex.id} className={`ckrow ${sel?"sel":""}`} onClick={()=>toggle(ex)}><div className="ckbox">{sel?"✓":""}</div><span className="cklbl">{ex.label}</span><span className="ckprice">+{fmt(ex.price)}</span></div>;})}</div></>}
         {item.hasCocktailExtras&&<><span className="ssep">Extras</span><div style={{display:"flex",flexDirection:"column",gap:5}}>{COCKTAIL_EXTRAS.map(ex=>{const sel=extras.find(e=>e.id===ex.id);return<div key={ex.id} className={`ckrow ${sel?"sel":""}`} onClick={()=>toggle(ex)}><div className="ckbox">{sel?"✓":""}</div><span className="cklbl">{ex.label}</span><span className="ckprice">+{fmt(ex.price)}</span></div>;})}</div></>}
         <div className="mrow2"><span className="mlbl">Total</span><span className="mval big">{fmt(finalPrice)}</span></div>
-        <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" onClick={()=>onAdd({...item,price:finalPrice,isCold:cold||item.isCold,cold,size,milk:milk&&milk!=="entera"?MILK_OPTIONS.find(m=>m.id===milk)?.label:null,extras})} disabled={!canAdd}>{canAdd?`Agregar ${fmt(finalPrice)}`:"Elige tamaño"}</button></div>
+        <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" onClick={()=>onAdd({...item,name:vLabel?`${item.name} (${vLabel})`:item.name,variant:vLabel,isFlatWhite:variant==="flat"||item.isFlatWhite,price:finalPrice,isCold:cold||item.isCold,cold,size,milk:milk&&milk!=="entera"?MILK_OPTIONS.find(m=>m.id===milk)?.label:null,extras})} disabled={!canAdd}>{canAdd?`Agregar ${fmt(finalPrice)}`:(item.variants&&variant===null?"Elige el tipo de café":"Elige tamaño")}</button></div>
       </div>
     </div>
   );
@@ -2963,6 +2988,32 @@ function MilkEntryModal({milkStock,onSave,onClose}){
       </div>
       <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" onClick={()=>onSave(milkType,liters)}>+{liters}L {MILK_TYPES.find(m=>m.id===milkType)?.label}</button></div>
     </>
+  );
+}
+
+function ManualDiscountModal({subtotal,employee,onApply,onClose}){
+  const [mode,setMode]=useState("pct");const [val,setVal]=useState("");
+  const v=parseFloat(val)||0;
+  const valid=mode==="pct"?(v>0&&v<=100):(v>0&&v<=subtotal);
+  const off=!valid?0:mode==="pct"?Math.round(subtotal*v/100):Math.round(v);
+  return(
+    <div className="ov" onClick={onClose}>
+      <div className="mod" onClick={e=>e.stopPropagation()}>
+        <div className="mdrag"/>
+        <h2>✏️ Descuento manual</h2>
+        <div className="ogrid">
+          <button className={`obtn ${mode==="pct"?"sel":""}`} onClick={()=>setMode("pct")}><span style={{fontSize:20}}>％</span><span className="oblbl">Porcentaje</span></button>
+          <button className={`obtn ${mode==="amt"?"sel":""}`} onClick={()=>setMode("amt")}><span style={{fontSize:20}}>$</span><span className="oblbl">Monto</span></button>
+        </div>
+        <span className="mlabel2">{mode==="pct"?"% de descuento":"Monto a descontar ($)"}</span>
+        <input className="minput" type="number" inputMode="decimal" placeholder={mode==="pct"?"Ej. 10":"Ej. 20"} value={val} onChange={e=>setVal(e.target.value)} autoFocus/>
+        <div className="mrow2"><span className="mlbl">Subtotal</span><span className="mval">{fmt(subtotal)}</span></div>
+        <div className="mrow2"><span className="mlbl">Descuento</span><span className="mval" style={{color:"var(--warn)"}}>−{fmt(off)}</span></div>
+        <div className="mrow2"><span className="mlbl">Total</span><span className="mval big">{fmt(subtotal-off)}</span></div>
+        <div className="mrow2"><span className="mlbl">Lo aplica</span><span className="mval">{employee.name}</span></div>
+        <div className="mbtns"><button className="mb" onClick={onClose}>Cancelar</button><button className="mb p" disabled={!valid} onClick={()=>onApply({id:"custom",emoji:"✏️",label:mode==="pct"?`Manual ${v}%`:`Manual $${v}`,pct:mode==="pct"?v/100:null,amount:mode==="amt"?v:null,by:employee.name})}>Aplicar</button></div>
+      </div>
+    </div>
   );
 }
 
